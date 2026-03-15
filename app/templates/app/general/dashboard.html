@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+
+    <!-- Optional auto refresh every 10 seconds -->
+    <meta http-equiv="refresh" content="10">
+</head>
+<body>
+
+<h2>Student Dashboard</h2>
+
+<!-- Check In / Check Out Form -->
+<form method="POST">
+    {% csrf_token %}
+    
+    <label>Enter Student ID:</label>
+    <input type="text" name="student_id" required>
+
+    <button type="submit">Submit</button>
+</form>
+
+<hr>
+
+<h3>Student List</h3>
+
+<table border="1">
+    <tr>
+        <th>Name</th>
+        <th>Student ID</th>
+        <th>Status</th>
+        <th>Presence</th>
+    </tr>
+
+    {% for student in students %}
+    <tr>
+        <td>{{ student.name }}</td>
+        <td>{{ student.student_id }}</td>
+        <td>{{ student.status }}</td>
+        <td>{{ student.presence_status }}</td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+</body>
+</html>
