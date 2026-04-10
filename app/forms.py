@@ -17,6 +17,14 @@ class StudentForm(forms.ModelForm):
         model = Student
         fields = "__all__"
 
-class OutingRequestForm(forms.Form):
-    model = OutingRequest
-    fields = ["reason", "destination"]
+
+class OutingRequestForm(forms.ModelForm):
+    class Meta:
+        model = OutingRequest
+        fields = ["destination", "reason", "outing_date", "outing_time"]
+        widgets = {
+            "destination": forms.TextInput(attrs={"class": "form-control", "placeholder": "Where are you going?"}),
+            "reason": forms.Textarea(attrs={"class": "form-control", "rows": 4, "placeholder": "Why do you need to go out?"}),
+            "outing_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "outing_time": forms.TimeInput(attrs={"class": "form-control", "type": "time"}),
+        }

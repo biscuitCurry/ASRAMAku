@@ -1,9 +1,13 @@
+from urllib import request
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 
 from .forms import RegisterForm, StudentForm, OutingRequestForm
 from .models import Student, CheckLog, OutingRequest
@@ -74,13 +78,20 @@ def dashboard(request):
         try:
             student = Student.objects.get(student_id=student_id)
 
-            # Prevent banned students
+            # Block banned
             if student.status == "Banned":
                 messages.error(request, "Student is banned.")
                 return redirect("dashboard")
 
+            # 🔥 CHECK APPROVAL FROM REQUEST (NOT STUDENT)
+            approved_request = OutingRequest.objects.filter(
+                student=student,
+                status="Approved"
+            ).last()
+
             # CHECK OUT
-            if student.presence_status == "In" and student.status == "Approved":
+            if student.presence_status == "In" and approved_request:
+
                 student.presence_status = "Out"
                 student.save()
 
@@ -89,12 +100,15 @@ def dashboard(request):
                     check_out_time=timezone.now()
                 )
 
+                # 🔥 CONSUME THE APPROVAL
+                approved_request.status = "Used"
+                approved_request.save()
+
                 messages.success(request, "Check-out successful.")
 
             # CHECK IN
             elif student.presence_status == "Out":
                 student.presence_status = "In"
-                student.status = "None"
                 student.save()
 
                 log = student.check_logs.filter(
@@ -108,18 +122,27 @@ def dashboard(request):
                 messages.success(request, "Check-in successful.")
 
             else:
-                messages.error(request, "Student not approved for exit.")
+                messages.error(request, "No approved outing request.")
 
         except Student.DoesNotExist:
             messages.error(request, "Student not found.")
 
         return redirect("dashboard")
 
+    # Build student data with outing request status
     students = Student.objects.all()
-
-    return render(request, "app/general/dashboard.html", {
-        "students": students
-    })
+    student_data = []
+    
+    for student in students:
+        latest_request = OutingRequest.objects.filter(student=student).last()
+        request_status = latest_request.status if latest_request else "None"
+        
+        student_data.append({
+            'student': student,
+            'request_status': request_status
+        })
+    
+    return render(request, "app/general/dashboard.html", {"student_data": student_data})
 
 
 # -------------------------
@@ -181,25 +204,33 @@ def delete_student(request, pk):
 def send_outing_request(request):
 
     if request.method == "POST":
+        student_id = request.POST.get("student_id")
+
+        try:
+            student = Student.objects.get(student_id=student_id)
+        except Student.DoesNotExist:
+            messages.error(request, "Student not found.")
+            return redirect("send_outing_request")
+
         form = OutingRequestForm(request.POST)
 
         if form.is_valid():
 
-            # prevent duplicate pending request
+            # Prevent duplicate pending request
             existing = OutingRequest.objects.filter(
-                student=request.user,
+                student=student,
                 status="Pending"
             ).exists()
 
             if existing:
                 messages.error(request, "You already have a pending request.")
-                return redirect("dashboard")
+                return redirect("send_outing_request")
 
             outing = form.save(commit=False)
-            outing.student = request.user
+            outing.student = student
             outing.save()
 
-            messages.success(request, "Outing request submitted.")
+            messages.success(request, "Request submitted.")
             return redirect("dashboard")
 
     else:
@@ -213,20 +244,21 @@ def manage_outing_requests(request):
 
     requests = OutingRequest.objects.all().order_by("-request_time")
 
-    return render(request, "admin/outing_requests.html", {"requests": requests})
+    return render(request, "admin/outing_requests.html", {
+        "requests": requests
+    })
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def approve_request(request, pk):
-
     req = get_object_or_404(OutingRequest, id=pk)
+
     req.status = "Approved"
+    req.student.status = "Approved"
     req.save()
+    req.student.save()
 
-    student = Student.objects.get(user=req.student)
-    student.status = "Approved"
-    student.save()
-
+    messages.success(request, "Request approved.")
     return redirect("manage_requests")
 
 @login_required
@@ -236,8 +268,22 @@ def reject_request(request, pk):
     req = get_object_or_404(OutingRequest, id=pk)
 
     req.status = "Rejected"
+    req.student.status = "Rejected"
     req.save()
+    req.student.save()
 
-    messages.info(request, "Outing request rejected.")
-
+    messages.info(request, "Request rejected.")
     return redirect("manage_requests")
+
+@require_http_methods(["GET"])
+def get_student_by_id(request, student_id):
+    try:
+        student = Student.objects.get(student_id=student_id)
+        return JsonResponse({
+            'id': student.id,
+            'name': student.name,
+            'course': student.course,
+            'session': student.session,
+        })
+    except Student.DoesNotExist:
+        return JsonResponse({'error': 'Student not found'}, status=404)

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CheckLog, Student
+from .models import CheckLog, Student, OutingRequest
 
 
 @admin.action(description="Approve selected students")
@@ -28,3 +28,10 @@ class StudentAdmin(admin.ModelAdmin):
 class CheckLogAdmin(admin.ModelAdmin):
     list_display = ("student", "check_out_time", "check_in_time")
     readonly_fields = ("student", "check_out_time", "check_in_time")
+
+@admin.register(OutingRequest)
+class OutingRequestAdmin(admin.ModelAdmin):
+    list_display = ("student", "destination", "outing_date", "status", "request_time")
+    search_fields = ("name", "destination")
+    list_filter = ("status", "outing_date")
+    actions = [approve_exit, disapprove_exit, ban_students]

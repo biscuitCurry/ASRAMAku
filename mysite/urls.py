@@ -20,9 +20,12 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from app import views
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('', include('app.urls')),
+    path('accounts/', include('app.urls')),  # Add this line
+    path('admin/', admin.site.urls),
 ]
 
 if settings.DEBUG:

@@ -27,16 +27,16 @@ class Student(models.Model):
     )
 
     presence_status = models.CharField(
-    max_length=10,
-    choices=[
-        ("In", "In"),
-        ("Out", "Out"),
-    ],
-    default="In"
+        max_length=10,
+        choices=[
+            ("In", "In"),
+            ("Out", "Out"),
+        ],
+        default="In"
     )
 
     def __str__(self):
-        return f"{self.name} ({self.student_id})"
+        return self.name
     
 
 class CheckLog(models.Model):
@@ -50,18 +50,18 @@ class CheckLog(models.Model):
 class OutingRequest(models.Model):
 
     STATUS_CHOICES = [
-        ("Pending", "Pending"),
-        ("Approved", "Approved"),
-        ("Rejected", "Rejected"),
-    ]
+    ("Pending", "Pending"),
+    ("Approved", "Approved"),
+    ("Rejected", "Rejected"),
+    ("Used", "Used"),   # 🔥 NEW
+]
 
-    student = models.ForeignKey(User, on_delete=models.CASCADE)
-
-    reason = models.TextField()
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="outing_requests")
     destination = models.CharField(max_length=255)
-
+    reason = models.TextField()
+    outing_date = models.DateField(null=True, blank=True)
+    outing_time = models.TimeField(null=True, blank=True)
     request_time = models.DateTimeField(auto_now_add=True)
-
     status = models.CharField(
         max_length=10,
         choices=STATUS_CHOICES,
@@ -69,4 +69,4 @@ class OutingRequest(models.Model):
     )
 
     def __str__(self):
-        return f"{self.student.username} - {self.status}"
+        return f"{self.student.name} - {self.destination} ({self.status})"
