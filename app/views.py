@@ -109,6 +109,7 @@ def dashboard(request):
             # CHECK IN
             elif student.presence_status == "Out":
                 student.presence_status = "In"
+                student.status = "None"  # Reset approval status
                 student.save()
 
                 log = student.check_logs.filter(
@@ -134,7 +135,11 @@ def dashboard(request):
     student_data = []
     
     for student in students:
-        latest_request = OutingRequest.objects.filter(student=student).last()
+        # Only show approved requests (not used/rejected)
+        latest_request = OutingRequest.objects.filter(
+            student=student,
+            status="Approved"
+        ).last()
         request_status = latest_request.status if latest_request else "None"
         
         student_data.append({
@@ -236,7 +241,7 @@ def send_outing_request(request):
     else:
         form = OutingRequestForm()
 
-    return render(request, "student/form.html", {"form": form})
+    return render(request, "student/outing_request.html", {"form": form})
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)

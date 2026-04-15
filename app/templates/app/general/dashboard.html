@@ -17,13 +17,6 @@
                 {% endfor %}
             {% endif %}
 
-            <!-- Outing Request Button -->
-            <div style="margin-bottom: 20px;">
-                <a href="{% url 'send_outing_request' %}" class="btn btn-primary">
-                    Submit Outing Request
-                </a>
-            </div>
-
             <!-- Check In / Check Out Form -->
             <div class="card mb-4">
                 <div class="card-header bg-info text-white">
@@ -62,6 +55,8 @@
                                     <th>Course</th>
                                     <th>Approval Status</th>
                                     <th>Presence</th>
+                                    <th>Check-Out Time</th>
+                                    <th>Check-In Time</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -92,6 +87,24 @@
                                         {% else %}
                                             <span class="badge bg-secondary">Out</span>
                                         {% endif %}
+                                    </td>
+                                    <td>
+                                        {% with latest_log=student.check_logs.last %}
+                                            {% if latest_log.check_out_time %}
+                                                {{ latest_log.check_out_time|date:"M d, H:i" }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {% with latest_log=student.check_logs.last %}
+                                            {% if latest_log.check_in_time %}
+                                                {{ latest_log.check_in_time|date:"M d, H:i" }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        {% endwith %}
                                     </td>
                                 </tr>
                                 {% endwith %}
