@@ -1,0 +1,91 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="{% url 'index' %}">
+            <i class="fas fa-home"></i> ASRAMAku
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                    {% if user.is_staff %}
+                        <!-- Staff Only -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard' %}">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'manage_students' %}">
+                                <i class="fas fa-users"></i> Manage Students
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'manage_requests' %}">
+                                <i class="fas fa-file-alt"></i> Outing Requests
+                            </a>
+                        </li>
+                    {% else %}
+                        <!-- Regular Student Only -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'send_outing_request' %}">
+                                <i class="fas fa-door-open"></i> Outing Request
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    <!-- Test Links -->
+                    <li class="nav-item">
+                        <a class="nav-link text-warning" href="{% url 'send_outing_request' %}" title="Test the outing form">
+                            <i class="fas fa-flask"></i> Submit Outing Form (Test)
+                        </a>
+                    </li>
+                    
+                    <!-- Common for all authenticated users -->
+                    <li class="nav-item">
+                        <span class="nav-link text-light">
+                            <i class="fas fa-user-circle"></i> {{ user.username }}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="confirmLogout(event)">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </li>
+                {% else %}
+                    <!-- Not Authenticated - Only Login (hidden on login page) -->
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Logout Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="logoutModalLabel">
+                    <i class="fas fa-exclamation-circle"></i> Confirm Logout
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to logout?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'logout' %}" class="btn btn-danger">Yes, Logout</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmLogout(event) {
+    event.preventDefault();
+    const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+    logoutModal.show();
+}
+</script>

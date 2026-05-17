@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-5">
     <div class="row">
-        <div class="col-md-10 mx-auto">
+        <div class="col-md-12">
             <h2>Student Dashboard</h2>
             <hr>
 
@@ -26,14 +26,11 @@
                     <form method="POST">
                         {% csrf_token %}
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="student_id" class="form-label">Enter Student ID:</label>
+                        <div class="mb-3">
+                            <label for="student_id" class="form-label">Enter Student ID:</label>
+                            <div class="input-group">
                                 <input type="text" id="student_id" name="student_id" class="form-control" required autofocus>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label>&nbsp;</label>
-                                <button type="submit" class="btn btn-success w-100">Submit</button>
+                                <button type="submit" class="btn btn-success">Submit</button>
                             </div>
                         </div>
                     </form>
@@ -42,8 +39,9 @@
 
             <!-- Student List -->
             <div class="card">
-                <div class="card-header bg-secondary text-white">
-                    <h5>Student Monitoring</h5>
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Student Monitoring</h5>
+                    <small class="text-light">Last updated: <span id="lastUpdate">now</span></small>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -55,28 +53,21 @@
                                     <th>Course</th>
                                     <th>Approval Status</th>
                                     <th>Presence</th>
-                                    <th>Check-Out Time</th>
-                                    <th>Check-In Time</th>
+                                    <th>Exit (Date & Time)</th>
+                                    <th>Enter (Date & Time)</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="studentTable">
                                 {% for item in student_data %} 
                                 {% with student=item.student status=item.request_status %}
+                                {% if status == "Approved" or student.presence_status == "Out" %}
                                 <tr>
-                                    <td>{{ student.name }}</td>
+                                    <td><strong>{{ student.name }}</strong></td>
                                     <td>{{ student.student_id }}</td>
                                     <td>{{ student.course }}</td>
                                     <td>
                                         {% if status == "Approved" %}
                                             <span class="badge bg-success">Approved</span>
-                                        {% elif status == "Rejected" %}
-                                            <span class="badge bg-danger">Rejected</span>
-                                        {% elif status == "Pending" %}
-                                            <span class="badge bg-warning">Pending</span>
-                                        {% elif status == "Used" %}
-                                            <span class="badge bg-secondary">Used</span>
-                                        {% elif student.status == "Banned" %}
-                                            <span class="badge bg-dark">Banned</span>
                                         {% else %}
                                             <span class="badge bg-light text-dark">None</span>
                                         {% endif %}
@@ -88,25 +79,34 @@
                                             <span class="badge bg-secondary">Out</span>
                                         {% endif %}
                                     </td>
+                                    <!-- Exit (Check-Out) Date & Time Combined -->
                                     <td>
                                         {% with latest_log=student.check_logs.last %}
                                             {% if latest_log.check_out_time %}
-                                                {{ latest_log.check_out_time|date:"M d, H:i" }}
+                                                <span class="text-success fw-bold">{{ latest_log.check_out_time|date:"M d, Y H:i" }}</span>
                                             {% else %}
                                                 <span class="text-muted">-</span>
                                             {% endif %}
                                         {% endwith %}
                                     </td>
+                                    <!-- Enter (Check-In) Date & Time Combined - Color based on 7pm limit -->
                                     <td>
                                         {% with latest_log=student.check_logs.last %}
                                             {% if latest_log.check_in_time %}
-                                                {{ latest_log.check_in_time|date:"M d, H:i" }}
+                                                {% with check_in_hour=latest_log.check_in_time|date:"H" %}
+                                                    {% if check_in_hour|add:"0" < 19 %}
+                                                        <span class="text-success fw-bold">{{ latest_log.check_in_time|date:"M d, Y H:i" }}</span>
+                                                    {% else %}
+                                                        <span class="text-danger fw-bold">{{ latest_log.check_in_time|date:"M d, Y H:i" }}</span>
+                                                    {% endif %}
+                                                {% endwith %}
                                             {% else %}
                                                 <span class="text-muted">-</span>
                                             {% endif %}
                                         {% endwith %}
                                     </td>
                                 </tr>
+                                {% endif %}
                                 {% endwith %}
                                 {% endfor %}
                             </tbody>
@@ -118,4 +118,21 @@
         </div>
     </div>
 </div>
+
+<script>
+// Auto-refresh every 5 seconds
+setInterval(function() {
+    location.reload();
+}, 5000);
+
+// Update last updated time
+function updateLastUpdated() {
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+}
+
+// Update on page load
+updateLastUpdated();
+</script>
+
 {% endblock %}

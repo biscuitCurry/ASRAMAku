@@ -1,0 +1,55 @@
+{% extends "app/base/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">Outing Request Details</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h5>Student Information</h5>
+                            <p><strong>Name:</strong> {{ request.student.name }}</p>
+                            <p><strong>Student ID:</strong> {{ request.student.student_id }}</p>
+                            <p><strong>Course:</strong> {{ request.student.course }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Request Status</h5>
+                            <p>
+                                <strong>Status:</strong>
+                                {% if request.status == "Pending" %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif request.status == "Approved" %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif request.status == "Rejected" %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Request Date:</strong> {{ request.request_time|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5>Outing Details</h5>
+                    <p><strong>Destination:</strong> {{ request.destination }}</p>
+                    <p><strong>Reason:</strong> {{ request.reason }}</p>
+                    <p><strong>Date:</strong> {{ request.outing_date }}</p>
+                    <p><strong>Time:</strong> {{ request.outing_time }}</p>
+
+                    <hr>
+
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'approve_request' request.id %}" class="btn btn-success">Approve</a>
+                        <a href="{% url 'reject_request' request.id %}" class="btn btn-danger">Reject</a>
+                        <a href="{% url 'manage_requests' %}" class="btn btn-secondary">Back</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

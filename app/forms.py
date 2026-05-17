@@ -15,7 +15,18 @@ class RegisterForm(UserCreationForm):
 class StudentForm(forms.ModelForm):
     class Meta:
         model = Student
-        fields = "__all__"
+        fields = ["name", "course", "session", "student_id", "id_card", "rfid_uid", "status", "presence_status", "user"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Full Name"}),
+            "course": forms.TextInput(attrs={"class": "form-control", "placeholder": "Course"}),
+            "session": forms.TextInput(attrs={"class": "form-control", "placeholder": "Session (e.g., JUL-DIS 2024)"}),
+            "student_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "Matric ID"}),
+            "id_card": forms.TextInput(attrs={"class": "form-control", "placeholder": "ID Card Number"}),
+            "rfid_uid": forms.TextInput(attrs={"class": "form-control", "placeholder": "RFID UID"}),
+            "status": forms.Select(attrs={"class": "form-control"}),
+            "presence_status": forms.Select(attrs={"class": "form-control"}),
+            "user": forms.Select(attrs={"class": "form-control"}),
+        }
 
 
 class OutingRequestForm(forms.ModelForm):

@@ -23,10 +23,11 @@
                         {% csrf_token %}
                         
                         <!-- Student ID Lookup -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="matricId" class="form-label">Matric ID / Student ID:</label>
+                        <div class="mb-3">
+                            <label for="matricId" class="form-label">Matric ID / Student ID:</label>
+                            <div class="input-group">
                                 <input type="text" id="matricId" name="student_id" class="form-control" placeholder="Enter your matric ID" required>
+                                <button type="button" id="fetchBtn" class="btn btn-info">Enter</button>
                             </div>
                         </div>
 
@@ -54,14 +55,14 @@
 
                             <!-- Destination -->
                             <div class="mb-3">
-                                <label for="destination" class="form-label">Destination:</label>
-                                <input type="text" name="destination" id="destination" class="form-control" placeholder="Where are you going?" required>
+                                <label for="destination" class="form-label">Purpose:</label>
+                                <input type="text" name="destination" id="destination" class="form-control" required>
                             </div>
 
                             <!-- Reason -->
                             <div class="mb-3">
-                                <label for="reason" class="form-label">Reason:</label>
-                                <textarea name="reason" id="reason" class="form-control" rows="4" placeholder="Why do you need to go out?" required></textarea>
+                                <label for="reason" class="form-label">Destination:</label>
+                                <textarea name="reason" id="reason" class="form-control" rows="4" required></textarea>
                             </div>
 
                             <!-- Date -->
@@ -81,7 +82,7 @@
                             <!-- Buttons -->
                             <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-success">Submit Request</button>
-                                <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+                                <a href="{% url 'index' %}" class="btn btn-secondary">Back</a>
                             </div>
                         </div>
 
@@ -99,8 +100,37 @@
 </div>
 
 <script>
+let fetchTimeout;
+
+// Fetch button click event
+document.getElementById('fetchBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    clearTimeout(fetchTimeout);
+    fetchStudentInfo();
+});
+
+// Fetch on Enter key press
+document.getElementById('matricId').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        clearTimeout(fetchTimeout);
+        fetchStudentInfo();
+    }
+});
+
+// Auto-fetch on blur after 500ms delay
 document.getElementById('matricId').addEventListener('blur', function() {
-    const matricId = this.value.trim();
+    const value = this.value.trim();
+    if (value) {
+        clearTimeout(fetchTimeout);
+        fetchTimeout = setTimeout(function() {
+            fetchStudentInfo();
+        }, 500);
+    }
+});
+
+function fetchStudentInfo() {
+    const matricId = document.getElementById('matricId').value.trim();
     
     if (!matricId) {
         document.getElementById('studentInfo').style.display = 'none';
@@ -125,7 +155,7 @@ document.getElementById('matricId').addEventListener('blur', function() {
             document.getElementById('errorMessage').textContent = error.message;
             document.getElementById('studentInfo').style.display = 'none';
         });
-});
+}
 
 // Set minimum date to today
 document.getElementById('outingDate').min = new Date().toISOString().split('T')[0];
