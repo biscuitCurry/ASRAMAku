@@ -1,0 +1,28 @@
+/* Circle Statistics */
+.circle-stat {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.circle-stat h3 {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+}
+
+.bg-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #00bcd4 100%);
+}

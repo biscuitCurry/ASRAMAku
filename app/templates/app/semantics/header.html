@@ -10,22 +10,32 @@
             <ul class="navbar-nav ms-auto">
                 {% if user.is_authenticated %}
                     {% if user.is_staff %}
-                        <!-- Staff Only -->
+                        <!-- Visible to ALL Staff Members (Guards and Wardens) -->
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'dashboard' %}">
                                 <i class="fas fa-tachometer-alt"></i> Dashboard
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'manage_students' %}">
-                                <i class="fas fa-users"></i> Manage Students
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'manage_requests' %}">
-                                <i class="fas fa-file-alt"></i> Outing Requests
-                            </a>
-                        </li>
+                        
+                        <!-- 🔒 WARDEN ONLY TABS: Hidden if the username contains "GUARD" -->
+                        {% if "GUARD" not in user.username %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'manage_students' %}">
+                                    <i class="fas fa-users"></i> Manage Students
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'manage_requests' %}">
+                                    <i class="fas fa-file-alt"></i> Outing Requests
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-warning" href="{% url 'send_outing_request' %}" title="Test the outing form">
+                                    <i class="fas fa-flask"></i> Submit Outing Form (Test)
+                                </a>
+                            </li>
+                        {% endif %}
+                        
                     {% else %}
                         <!-- Regular Student Only -->
                         <li class="nav-item">
@@ -35,24 +45,23 @@
                         </li>
                     {% endif %}
                     
-                    <!-- Test Links -->
-                    <li class="nav-item">
-                        <a class="nav-link text-warning" href="{% url 'send_outing_request' %}" title="Test the outing form">
-                            <i class="fas fa-flask"></i> Submit Outing Form (Test)
-                        </a>
-                    </li>
-                    
-                    <!-- Common for all authenticated users -->
-                    <li class="nav-item">
-                        <span class="nav-link text-light">
-                            <i class="fas fa-user-circle"></i> {{ user.username }}
-                        </span>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="confirmLogout(event)">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </a>
-                    </li>
+                    <!-- Common for all authenticated users (SB Admin 2 Style) -->
+                        <li class="nav-item dropdown no-arrow position-relative" id="userMenuContainer">
+                            <a class="nav-link text-light dropdown-toggle" href="#" id="userDropdown" role="button" style="cursor: pointer;">
+                                <span class="mr-2 d-none d-lg-inline text-gray-400 small me-2">{{ user.username }}</span>
+                                <i class="fas fa-user-circle fa-lg"></i>
+                            </a>
+                            
+                            <!-- Dropdown - User Information -->
+                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow animated--grow-in" 
+                                id="userDropdownMenu" 
+                                style="display: none; position: absolute; right: 0; top: 100%; z-index: 1050; min-width: 160px;">
+                                <a class="dropdown-item text-danger" href="#" onclick="confirmLogout(event)">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Logout
+                                </a>
+                            </div>
+                        </li>
                 {% else %}
                     <!-- Not Authenticated - Only Login (hidden on login page) -->
                 {% endif %}

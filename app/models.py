@@ -42,6 +42,7 @@ class CheckLog(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="check_logs")
     check_out_time = models.DateTimeField(null=True, blank=True)
     check_in_time = models.DateTimeField(null=True, blank=True)
+    is_late = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.student.name} - Log"

@@ -12,6 +12,22 @@ class RegisterForm(UserCreationForm):
         fields = ["username", "email", "password1", "password2"]
 
 
+# In your forms.py file:
+
+class StudentSelfRegisterForm(forms.ModelForm):
+    class Meta:
+        model = Student
+        # ONLY include the fields that the student actually fills out on the webpage!
+        fields = ["name", "course", "session", "student_id", "id_card", "rfid_uid"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Full Name"}),
+            "course": forms.TextInput(attrs={"class": "form-control", "placeholder": "Course"}),
+            "session": forms.TextInput(attrs={"class": "form-control", "placeholder": "Session (e.g., JUL-DIS 2024)"}),
+            "student_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "Matric ID"}),
+            "id_card": forms.TextInput(attrs={"class": "form-control", "placeholder": "ID Card Number"}),
+            "rfid_uid": forms.TextInput(attrs={"class": "form-control", "placeholder": "RFID UID"}),
+        }
+
 class StudentForm(forms.ModelForm):
     class Meta:
         model = Student

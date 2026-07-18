@@ -26,6 +26,7 @@ urlpatterns = [
     path('', include('app.urls')),
     path('accounts/', include('app.urls')),  # Add this line
     path('admin/', admin.site.urls),
+    path('', include('pwa.urls')),  # Add this line for PWA support
 ]
 
 if settings.DEBUG:

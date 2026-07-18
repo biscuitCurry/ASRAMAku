@@ -17,19 +17,19 @@
                 {% endfor %}
             {% endif %}
 
-            <!-- Check In / Check Out Form -->
+            <!-- Quick Check In / Check Out Form -->
             <div class="card mb-4">
                 <div class="card-header bg-info text-white">
-                    <h5>Check In / Check Out</h5>
+                    <h5>Check In / Out</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
+                    <form method="POST" id="quickToggleForm">
                         {% csrf_token %}
                         
                         <div class="mb-3">
-                            <label for="student_id" class="form-label">Enter Student ID:</label>
+                            <label for="student_id" class="form-label">Enter Student ID / ID Card / RFID:</label>
                             <div class="input-group">
-                                <input type="text" id="student_id" name="student_id" class="form-control" required autofocus>
+                                <input type="text" id="student_id" name="student_id" class="form-control" required autofocus >
                                 <button type="submit" class="btn btn-success">Submit</button>
                             </div>
                         </div>
@@ -37,15 +37,45 @@
                 </div>
             </div>
 
-            <!-- Student List -->
+            <!-- Student List & Date Filter -->
             <div class="card">
-                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Student Monitoring</h5>
+                <div class="card-header bg-secondary text-white d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <h5 class="mb-0">Student Monitoring</h5>
+                        <span class="badge bg-light text-dark fw-normal">
+                            Viewing: {% if selected_date_str %}{{ selected_date_str }}{% else %}Today{% endif %}
+                        </span>
+                    </div>
                     <small class="text-light">Last updated: <span id="lastUpdate">now</span></small>
                 </div>
                 <div class="card-body">
+                    
+                    <!-- Day Navigation Controls -->
+                    <div class="row align-items-center mb-4 g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="btn-group w-100" role="group" aria-label="Day Navigation">
+                                <a href="?date={{ prev_date_str }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-chevron-left"></i> Previous Day
+                                </a>
+                                <a href="?date={{ today_str }}" class="btn btn-outline-primary {% if is_today %}active{% endif %}">
+                                    Today
+                                </a>
+                                <a href="?date={{ next_date_str }}" class="btn btn-outline-secondary">
+                                    Next Day <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i> Jump to Date:</span>
+                                <input type="date" id="datePicker" class="form-control" value="{{ selected_date_str }}" onchange="navigateDate(this.value)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Log Table -->
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover">
+                        <table class="table table-striped table-hover align-middle mb-0">
                             <thead class="table-dark">
                                 <tr>
                                     <th>Name</th>
@@ -53,14 +83,14 @@
                                     <th>Course</th>
                                     <th>Approval Status</th>
                                     <th>Presence</th>
-                                    <th>Exit (Date & Time)</th>
-                                    <th>Enter (Date & Time)</th>
+                                    <th>Late Check-In</th>
+                                    <th>Out (Date & Time)</th>
+                                    <th>In (Date & Time)</th>
                                 </tr>
                             </thead>
                             <tbody id="studentTable">
-                                {% for item in student_data %} 
-                                {% with student=item.student status=item.request_status %}
-                                {% if status == "Approved" or student.presence_status == "Out" %}
+                                {% for item in log_entries %} 
+                                {% with student=item.student status=item.request_status log=item.log %}
                                 <tr>
                                     <td><strong>{{ student.name }}</strong></td>
                                     <td>{{ student.student_id }}</td>
@@ -73,41 +103,48 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if student.presence_status == "In" %}
+                                        {% if log.check_in_time %}
                                             <span class="badge bg-info">In</span>
                                         {% else %}
                                             <span class="badge bg-secondary">Out</span>
                                         {% endif %}
                                     </td>
-                                    <!-- Exit (Check-Out) Date & Time Combined -->
                                     <td>
-                                        {% with latest_log=student.check_logs.last %}
-                                            {% if latest_log.check_out_time %}
-                                                <span class="text-success fw-bold">{{ latest_log.check_out_time|date:"M d, Y H:i" }}</span>
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        {% endwith %}
+                                        {% if item.is_late %}
+                                            <span class="badge bg-danger">Late</span>
+                                        {% else %}
+                                            <span class="badge bg-success">On time</span>
+                                        {% endif %}
                                     </td>
-                                    <!-- Enter (Check-In) Date & Time Combined - Color based on 7pm limit -->
                                     <td>
-                                        {% with latest_log=student.check_logs.last %}
-                                            {% if latest_log.check_in_time %}
-                                                {% with check_in_hour=latest_log.check_in_time|date:"H" %}
-                                                    {% if check_in_hour|add:"0" < 19 %}
-                                                        <span class="text-success fw-bold">{{ latest_log.check_in_time|date:"M d, Y H:i" }}</span>
-                                                    {% else %}
-                                                        <span class="text-danger fw-bold">{{ latest_log.check_in_time|date:"M d, Y H:i" }}</span>
-                                                    {% endif %}
-                                                {% endwith %}
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        {% endwith %}
+                                        {% if log.check_out_time %}
+                                            <span class="text-success fw-bold">{{ log.check_out_time|date:"M d, Y H:i" }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.check_in_time %}
+                                            {% with check_in_hour=log.check_in_time|date:"H" %}
+                                                {% if check_in_hour|add:"0" < 19 %}
+                                                    <span class="text-success fw-bold">{{ log.check_in_time|date:"M d, Y H:i" }}</span>
+                                                {% else %}
+                                                    <span class="text-danger fw-bold">{{ log.check_in_time|date:"M d, Y H:i" }}</span>
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
                                     </td>
                                 </tr>
-                                {% endif %}
                                 {% endwith %}
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        <div class="mb-2"><i class="bi bi-calendar-x fs-1"></i></div>
+                                        <span>No monitoring logs recorded for this day.</span>
+                                    </td>
+                                </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -120,18 +157,90 @@
 </div>
 
 <script>
-// Auto-refresh every 5 seconds
-setInterval(function() {
-    location.reload();
-}, 5000);
-
-// Update last updated time
-function updateLastUpdated() {
-    const now = new Date();
-    document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+// Navigate to a chosen date on picker change
+function navigateDate(dateStr) {
+    if (dateStr) {
+        window.location.search = `?date=${dateStr}`;
+    }
 }
 
-// Update on page load
+function updateLastUpdated() {
+    const serverTimeUrl = '{% url "server_time" %}';
+    // Only fetch if Django successfully compiled the template url tag
+    if (serverTimeUrl && !serverTimeUrl.startsWith('{%')) {
+        fetch(serverTimeUrl)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('lastUpdate').textContent = data.server_time || 'sync pending';
+            })
+            .catch(() => {
+                document.getElementById('lastUpdate').textContent = 'sync pending';
+            });
+    } else {
+        document.getElementById('lastUpdate').textContent = 'sync pending';
+    }
+}
+
+const quickToggleForm = document.getElementById('quickToggleForm');
+const quickToggleInput = document.getElementById('student_id');
+
+if (quickToggleForm && quickToggleInput) {
+    // Initial focus on load
+    quickToggleInput.focus();
+
+    // Submit form on Enter keypress
+    quickToggleInput.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            quickToggleForm.requestSubmit();
+        }
+    });
+
+    // 1. Keep focus when clicking on non-interactive regions of the screen
+    document.addEventListener('click', function (event) {
+        const isInteractive = event.target.closest('input, button, a, select, textarea, [role="button"]');
+        if (!isInteractive) {
+            quickToggleInput.focus();
+        }
+    });
+
+    // 2. Automatically refocus if the input loses focus (blur), unless transitioning to another input/button
+    quickToggleInput.addEventListener('blur', function (event) {
+        setTimeout(() => {
+            const activeEl = document.activeElement;
+            const isInteractive = activeEl && (
+                activeEl.tagName === 'INPUT' || 
+                activeEl.tagName === 'BUTTON' || 
+                activeEl.tagName === 'A' || 
+                activeEl.tagName === 'SELECT' || 
+                activeEl.tagName === 'TEXTAREA'
+            );
+            // If the newly active element isn't another interactive field, pull focus back
+            if (!isInteractive) {
+                quickToggleInput.focus();
+            }
+        }, 10);
+    });
+}
+
+// Guard real-time Server-Sent Events updates so they don't break in non-Django preview configurations
+const eventUrl = '{% url "dashboard_events" %}';
+if (eventUrl && !eventUrl.startsWith('{%')) {
+    const dashboardEvents = new EventSource(eventUrl);
+    dashboardEvents.addEventListener('update', function () {
+        window.location.reload();
+    });
+    dashboardEvents.onerror = function () {
+        console.warn('Dashboard updates stream disconnected.');
+    };
+
+    window.addEventListener('beforeunload', function () {
+        dashboardEvents.close();
+    });
+} else {
+    console.warn('Real-time events disabled in preview environment.');
+}
+
 updateLastUpdated();
 </script>
 

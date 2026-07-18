@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'app',
+    'pwa',
 ]
 
 MIDDLEWARE = [
@@ -116,7 +117,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kuala_Lumpur'
 
 USE_I18N = True
 
@@ -131,3 +132,37 @@ STATIC_ROOT = Path.joinpath(BASE_DIR, 'static')
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = Path.joinpath(BASE_DIR, 'media')
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+PWA_APP_NAME = 'ASRAMAku'
+PWA_APP_DESCRIPTION = "ASRAMAku - Hostel Management System"
+PWA_APP_THEME_COLOR = '#0A0A0A'
+PWA_APP_BACKGROUND_COLOR = '#FFFFFF'
+PWA_APP_DISPLAY = 'standalone'
+PWA_APP_SCOPE = '/'
+PWA_APP_ORIENTATION = 'any'
+PWA_APP_START_URL = '/'
+PWA_APP_STATUS_BAR_COLOR = 'default'
+PWA_APP_ICONS = [
+    {
+        'src': '/static/app/img/asramaku_logo.png',
+        'sizes': '512x512',
+    }
+]
+
+PWA_APP_SPLASH_SCREEN = [
+    {
+        'src': '/static/app/img/asramaku_logo.png',
+        'media': '(device-width: 320px) and (device-height: 568px)' and '(-webkit-device-pixel-ratio: 2)',
+    }
+]
+PWA_APP_DIR = 'ltr'
+PWA_APP_LANG = 'en-US', 'ms-MY'
+
+PWA_APP_DEBUG_MODE = True
+
+PWA_APP_SERVICE_WORKER_PATH = '/static/app/js/serviceworker.js'

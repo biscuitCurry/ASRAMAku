@@ -1,0 +1,67 @@
+{% extends "app/base/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">Student Self Registration</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <p class="text-muted">Register your details below. Your information will be saved directly to the hostel database.</p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Full Name</label>
+                                {{ form.name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Course</label>
+                                {{ form.course }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Session</label>
+                                {{ form.session }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Matric ID</label>
+                                {{ form.student_id }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">ID Card Number</label>
+                                {{ form.id_card }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">RFID UID</label>
+                                {{ form.rfid_uid }}
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-success">Register</button>
+                            <a href="{% url 'index' %}" class="btn btn-secondary">Back</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {% load static %}
+    <script src="{% static 'app/js/self_register.js' %}"></script>
+{% endblock %}
