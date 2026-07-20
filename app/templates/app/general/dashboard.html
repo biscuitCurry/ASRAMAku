@@ -7,10 +7,10 @@
             <h2>Student Dashboard</h2>
             <hr>
 
-            <!-- Messages -->
+            <!-- Updated Messages Section in dashboard.html -->
             {% if messages %}
                 {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show auto-fade" role="alert">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
@@ -91,7 +91,10 @@
                             <tbody id="studentTable">
                                 {% for item in log_entries %} 
                                 {% with student=item.student status=item.request_status log=item.log %}
-                                <tr>
+                                
+                                <!-- CHANGE THIS LINE TO ADD THE CONDITIONAL BOOTSTRAP CLASSES -->
+                                <tr class="{% if item.is_late %}table-danger{% else %}table-success{% endif %}">
+                                    
                                     <td><strong>{{ student.name }}</strong></td>
                                     <td>{{ student.student_id }}</td>
                                     <td>{{ student.course }}</td>
@@ -118,33 +121,20 @@
                                     </td>
                                     <td>
                                         {% if log.check_out_time %}
-                                            <span class="text-success fw-bold">{{ log.check_out_time|date:"M d, Y H:i" }}</span>
+                                            <span class="text-dark fw-bold">{{ log.check_out_time|date:"M d, Y H:i" }}</span>
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if log.check_in_time %}
-                                            {% with check_in_hour=log.check_in_time|date:"H" %}
-                                                {% if check_in_hour|add:"0" < 19 %}
-                                                    <span class="text-success fw-bold">{{ log.check_in_time|date:"M d, Y H:i" }}</span>
-                                                {% else %}
-                                                    <span class="text-danger fw-bold">{{ log.check_in_time|date:"M d, Y H:i" }}</span>
-                                                {% endif %}
-                                            {% endwith %}
+                                            <span class="text-dark fw-bold">{{ log.check_in_time|date:"M d, Y H:i" }}</span>
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                 </tr>
                                 {% endwith %}
-                                {% empty %}
-                                <tr>
-                                    <td colspan="8" class="text-center text-muted py-5">
-                                        <div class="mb-2"><i class="bi bi-calendar-x fs-1"></i></div>
-                                        <span>No monitoring logs recorded for this day.</span>
-                                    </td>
-                                </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -242,6 +232,24 @@ if (eventUrl && !eventUrl.startsWith('{%')) {
 }
 
 updateLastUpdated();
+
+// Automatically fade out temporary alerts after 1 second
+document.addEventListener("DOMContentLoaded", function() {
+    const alerts = document.querySelectorAll('.alert.auto-fade');
+    
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            // Trigger Bootstrap's built-in CSS fade transition
+            alert.classList.remove('show');
+            
+            // Clean up the DOM element space completely after CSS finishes transitioning
+            setTimeout(function() {
+                alert.remove();
+            }, 150); 
+            
+        }, 1000); // 1000ms = 1 second delay before fading out
+    });
+});
 </script>
 
 {% endblock %}

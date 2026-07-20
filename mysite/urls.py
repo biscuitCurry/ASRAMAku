@@ -24,9 +24,9 @@ from app import views
 
 urlpatterns = [
     path('', include('app.urls')),
-    path('accounts/', include('app.urls')),  # Add this line
+    path('accounts/', include('app.urls')),
     path('admin/', admin.site.urls),
-    path('', include('pwa.urls')),  # Add this line for PWA support
+    path('', include('pwa.urls')),
 ]
 
 if settings.DEBUG:
