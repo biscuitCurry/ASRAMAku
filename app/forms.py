@@ -11,37 +11,21 @@ class RegisterForm(UserCreationForm):
         model = User
         fields = ["username", "email", "password1", "password2"]
 
-
-# In your forms.py file:
-
-class StudentSelfRegisterForm(forms.ModelForm):
-    class Meta:
-        model = Student
-        # ONLY include the fields that the student actually fills out on the webpage!
-        fields = ["name", "course", "session", "student_id", "id_card", "rfid_uid"]
-        widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Full Name"}),
-            "course": forms.TextInput(attrs={"class": "form-control", "placeholder": "Course"}),
-            "session": forms.TextInput(attrs={"class": "form-control", "placeholder": "Session (e.g., JUL-DIS 2024)"}),
-            "student_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "Matric ID"}),
-            "id_card": forms.TextInput(attrs={"class": "form-control", "placeholder": "ID Card Number"}),
-            "rfid_uid": forms.TextInput(attrs={"class": "form-control", "placeholder": "RFID UID"}),
-        }
-
 class StudentForm(forms.ModelForm):
     class Meta:
         model = Student
-        fields = ["name", "course", "session", "student_id", "id_card", "rfid_uid", "status", "presence_status", "user"]
+        fields = ["name", "course", "session", "student_id", "id_card", "rfid_uid", "address", "phone_number", "tvetmara_email", "parent_contact"]
         widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Full Name"}),
-            "course": forms.TextInput(attrs={"class": "form-control", "placeholder": "Course"}),
-            "session": forms.TextInput(attrs={"class": "form-control", "placeholder": "Session (e.g., JUL-DIS 2024)"}),
-            "student_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "Matric ID"}),
-            "id_card": forms.TextInput(attrs={"class": "form-control", "placeholder": "ID Card Number"}),
-            "rfid_uid": forms.TextInput(attrs={"class": "form-control", "placeholder": "RFID UID"}),
-            "status": forms.Select(attrs={"class": "form-control"}),
-            "presence_status": forms.Select(attrs={"class": "form-control"}),
-            "user": forms.Select(attrs={"class": "form-control"}),
+            "name": forms.TextInput(attrs={"class": "form-control text-uppercase", "placeholder": "Full Name"}),
+            "course": forms.TextInput(attrs={"class": "form-control text-uppercase", "placeholder": "Course"}),
+            "session": forms.TextInput(attrs={"id": "session-input", "class": "form-control", "placeholder": "Session (e.g., JUL-DIS 2024)"}),
+            "student_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "Matric ID (e.g., 1234567890)"}),
+            "id_card": forms.TextInput(attrs={"class": "form-control", "placeholder": "IC Number"}),
+            "rfid_uid": forms.TextInput(attrs={"class": "form-control", "placeholder": "RFID UID (Tap your IC on RFID scanner)"}),
+            "address": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Address"}),
+            "phone_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "Phone Number"}),
+            "tvetmara_email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "TVETMARA Email (e.g., student@sgpetani.tvetmara.edu.my)"}),
+            "parent_contact": forms.TextInput(attrs={"class": "form-control", "placeholder": "Parent/Guardian Contact"}),
         }
 
 

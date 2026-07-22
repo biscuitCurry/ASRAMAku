@@ -16,6 +16,12 @@ def disapprove_exit(modeladmin, request, queryset):
 def ban_students(modeladmin, request, queryset):
     queryset.update(status="Banned")
 
+@admin.action(description="Delete selected log entries permanently")
+def delete_logs(modeladmin, request, queryset):
+    count = queryset.count()
+    queryset.delete()
+    modeladmin.message_user(request, f"Successfully deleted {count} check log record(s).")
+
 
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
@@ -28,6 +34,7 @@ class StudentAdmin(admin.ModelAdmin):
 class CheckLogAdmin(admin.ModelAdmin):
     list_display = ("student", "check_out_time", "check_in_time")
     readonly_fields = ("student", "check_out_time", "check_in_time")
+    actions = [delete_logs]
 
 @admin.register(OutingRequest)
 class OutingRequestAdmin(admin.ModelAdmin):

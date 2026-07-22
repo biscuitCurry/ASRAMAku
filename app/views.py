@@ -11,7 +11,7 @@ from django.http import JsonResponse, StreamingHttpResponse
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
 
-from .forms import RegisterForm, StudentForm, OutingRequestForm, StudentSelfRegisterForm
+from .forms import StudentForm, OutingRequestForm
 from .models import Student, CheckLog, OutingRequest
 
 
@@ -110,23 +110,23 @@ def index(request):
     # Show login form if not authenticated
     return render(request, "app/general/index.html")
 
-def register(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard' if request.user.is_staff else 'send_outing_request')
+# def register(request):
+#     if request.user.is_authenticated:
+#         return redirect('dashboard' if request.user.is_staff else 'send_outing_request')
 
-    if request.method == "POST":
-        # USE THE NEW SELF-REGISTER FORM HERE:
-        form = StudentSelfRegisterForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Registration successful! You can now check in or request outings.")
-            return redirect("index")
-        else:
-            messages.error(request, "Registration failed. Please check your inputs.")
-    else:
-        form = StudentSelfRegisterForm()
+#     if request.method == "POST":
+#         # USE THE NEW SELF-REGISTER FORM HERE:
+#         form = StudentSelfRegisterForm(request.POST)
+#         if form.is_valid():
+#             form.save()
+#             messages.success(request, "Registration successful! You can now check in or request outings.")
+#             return redirect("index")
+#         else:
+#             messages.error(request, "Registration failed. Please check your inputs.")
+#     else:
+#         form = StudentSelfRegisterForm()
         
-    return render(request, "app/general/self_register.html", {"form": form})
+#     return render(request, "app/general/self_register.html", {"form": form})
 
 
 def login_view(request):
@@ -230,11 +230,11 @@ def dashboard(request):
             selected_date = today
 
     # Calculate dates for controls
-    prev_date_str = (selected_date - timedelta(days=1)).strftime("%Y-%m-%d")
-    next_date_str = (selected_date + timedelta(days=1)).strftime("%Y-%m-%d")
-    today_str = today.strftime("%Y-%m-%d")
+    # prev_date_str = (selected_date - timedelta(days=1)).strftime("%Y-%m-%d")
+    # next_date_str = (selected_date + timedelta(days=1)).strftime("%Y-%m-%d")
+    # today_str = today.strftime("%Y-%m-%d")
     selected_date_str = selected_date.strftime("%Y-%m-%d")
-    is_today = (selected_date == today)
+    # is_today = (selected_date == today)
 
     # Calculate timezone-aware start and end datetimes for the selected local day
     start_datetime = timezone.make_aware(datetime.combine(selected_date, time.min))
@@ -279,10 +279,10 @@ def dashboard(request):
     return render(request, "app/general/dashboard.html", {
         "log_entries": log_entries,
         "selected_date_str": selected_date_str,
-        "prev_date_str": prev_date_str,
-        "next_date_str": next_date_str,
-        "today_str": today_str,
-        "is_today": is_today,
+        # "prev_date_str": prev_date_str,
+        # "next_date_str": next_date_str,
+        # "today_str": today_str,
+        # "is_today": is_today,
     })
 
 
@@ -384,7 +384,7 @@ def send_outing_request(request):
             messages.error(request, "Student not found.")
             return redirect('send_outing_request')
     
-    return render(request, "student/outing_request.html")
+    return render(request, "app/general/outing_request.html")
 
 
 @login_required

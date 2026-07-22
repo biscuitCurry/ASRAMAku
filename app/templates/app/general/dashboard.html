@@ -52,20 +52,8 @@
                     
                     <!-- Day Navigation Controls -->
                     <div class="row align-items-center mb-4 g-3">
-                        <div class="col-12 col-md-6">
-                            <div class="btn-group w-100" role="group" aria-label="Day Navigation">
-                                <a href="?date={{ prev_date_str }}" class="btn btn-outline-secondary">
-                                    <i class="bi bi-chevron-left"></i> Previous Day
-                                </a>
-                                <a href="?date={{ today_str }}" class="btn btn-outline-primary {% if is_today %}active{% endif %}">
-                                    Today
-                                </a>
-                                <a href="?date={{ next_date_str }}" class="btn btn-outline-secondary">
-                                    Next Day <i class="bi bi-chevron-right"></i>
-                                </a>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6">
+                        <!-- Button group removed; date picker column widened to full width (col-12) -->
+                        <div class="col-12">
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i> Jump to Date:</span>
                                 <input type="date" id="datePicker" class="form-control" value="{{ selected_date_str }}" onchange="navigateDate(this.value)">

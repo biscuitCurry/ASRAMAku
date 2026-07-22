@@ -19,6 +19,19 @@
                         {% endfor %}
                     {% endif %}
 
+                    <div class="alert alert-info py-3 mb-4">
+                        <h5 class="alert-heading mb-2"><i class="fas fa-edit me-2"></i><strong>Form Guide</strong></h5>
+                        <hr class="my-2">
+                        <ul class="mb-0 ps-3">
+                            <li><strong>Full Name & Course:</strong> Enter the student's legal name and official course abbreviation (e.g., Diploma in Computer Science).</li>
+                            <li><strong>Session:</strong> Type the intake batch. The box will auto-format to uppercase with dashes (e.g., typing <code class="text-dark bg-light px-1 rounded">juldis2026</code> becomes <code class="text-dark bg-light px-1 rounded">JUL - DIS 2026</code>).</li>
+                            <li><strong>Matric ID & IC Number:</strong> Enter the matric & IC number.</li>
+                            <li><strong>RFID UID:</strong> Click into the input field and scan the student's IC using the USB reader to capture the chip serial number.</li>
+                            <li><strong>TVETMARA Email:</strong> Enter the official institutional email assigned to the student (e.g., <code class="text-dark bg-light px-1 rounded">student@sgpetani.tvetmara.edu.my</code>).</li>
+                            <li><strong>Parent Contact:</strong> Provide the active phone number of the parent or legal guardian for emergency or checkout alert tracking.</li>
+                        </ul>
+                    </div>
+
                     <form method="POST">
                         {% csrf_token %}
                         
@@ -45,4 +58,52 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sessionInput = document.getElementById('session-input');
+
+    if (sessionInput) {
+        sessionInput.addEventListener('input', function (e) {
+            // 1. Force uppercase immediately
+            let value = e.target.value.toUpperCase();
+            
+            // 2. Strip out any existing spaces or dashes so we can rebuild cleanly
+            let cleanValue = value.replace(/[^A-Z0-9]/g, '');
+            
+            let formattedValue = '';
+
+            // 3. Extract the parts based on character length typed so far
+            if (cleanValue.length > 0) {
+                // First Month (up to 3 characters)
+                formattedValue += cleanValue.substring(0, 3);
+            }
+            if (cleanValue.length > 3) {
+                // Add the clean spacing and dash, then Second Month (up to 3 characters)
+                formattedValue += ' - ' + cleanValue.substring(3, 6);
+            }
+            if (cleanValue.length > 6) {
+                // Add a space, then the Year (up to 4 digits)
+                formattedValue += ' ' + cleanValue.substring(6, 10);
+            }
+
+            // 4. Update the input box value
+            e.target.value = formattedValue;
+        });
+
+        // Prevent users from accidentally breaking the format with trailing spaces on backspace
+        sessionInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace') {
+                let value = e.target.value;
+                // If backspacing into the " - " or trailing space, wipe out the previous block character
+                if (value.endsWith(' - ') || value.endsWith(' ')) {
+                    e.preventDefault();
+                    e.target.value = value.trim().substring(0, value.length - 3);
+                }
+            }
+        });
+    }
+});
+</script>
+
 {% endblock %}

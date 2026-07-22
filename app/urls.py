@@ -9,7 +9,7 @@ urlpatterns = [
     path("", views.index, name="index"),  # Root path goes to index (login page)
     path("login/", views.login_view, name="login"),
     path("logout/", views.log_out, name="logout"),
-    path("register/", views.register, name="register"),  # Public self-registration route
+    # path("register/", views.register, name="register"),  # Public self-registration route
     path("dashboard/", views.dashboard, name="dashboard"),
 
     # ==========================================

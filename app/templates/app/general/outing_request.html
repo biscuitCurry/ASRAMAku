@@ -1,0 +1,189 @@
+{% extends "app/base/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Submit Outing Request</h3>
+                </div>
+                <div class="card-body">
+
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST" id="outingForm">
+                        {% csrf_token %}
+                        
+                        <!-- Student ID Lookup -->
+                        <div class="mb-3">
+                            <label for="matricId" class="form-label">Matric ID / Student ID:</label>
+                            <div class="input-group">
+                                <input type="text" id="matricId" name="student_id" class="form-control" placeholder="Enter your matric ID" required>
+                                <button type="button" id="fetchBtn" class="btn btn-info">Enter</button>
+                            </div>
+                        </div>
+
+                        <!-- Auto-fetched Student Info -->
+                        <div id="studentInfo" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Name:</label>
+                                    <input type="text" id="studentName" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Course:</label>
+                                    <input type="text" id="studentCourse" class="form-control" readonly>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Session:</label>
+                                    <input type="text" id="studentSession" class="form-control" readonly>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="alert alert-info py-2 mb-3">
+                                <strong>Quick Guide:</strong> Use the dashboard quick toggle for immediate check-in/out actions. The outing request page is reserved for formal requests.<br>
+                                <strong>Curfew Rules:</strong> Daily return limits are 7:00 PM (Sunday – Thursday) and 10:00 PM (Friday & Saturday). Late returns are automatically flagged.
+                            </div>
+
+                            <!-- Destination -->
+                            <div class="mb-3">
+                                <label for="destination" class="form-label">Purpose:</label>
+                                <input type="text" name="destination" id="destination" class="form-control" required>
+                            </div>
+
+                            <!-- Reason -->
+                            <div class="mb-3">
+                                <label for="reason" class="form-label">Destination:</label>
+                                <textarea name="reason" id="reason" class="form-control" rows="4" required></textarea>
+                            </div>
+
+                            <!-- Date -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="outingDate" class="form-label">Date:</label>
+                                    <input type="date" name="outing_date" id="outingDate" class="form-control" required>
+                                </div>
+
+                                <!-- Time -->
+                                <div class="col-md-6">
+                                    <label for="outingTime" class="form-label">Time:</label>
+                                    <input type="time" name="outing_time" id="outingTime" class="form-control" required>
+                                </div>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success">Submit Request</button>
+                                <a href="{% url 'index' %}" class="btn btn-secondary">Back</a>
+                            </div>
+                        </div>
+
+                        <!-- Error Message -->
+                        <div id="errorAlert" class="alert alert-danger alert-dismissible fade show" style="display: none;" role="alert">
+                            <strong>Error:</strong> <span id="errorMessage"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let fetchTimeout;
+
+// Fetch button click event
+document.getElementById('fetchBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    clearTimeout(fetchTimeout);
+    fetchStudentInfo();
+});
+
+// Fetch on Enter key press
+document.getElementById('matricId').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        clearTimeout(fetchTimeout);
+        fetchStudentInfo();
+    }
+});
+
+// Auto-fetch on blur after 500ms delay
+{% comment %} document.getElementById('matricId').addEventListener('blur', function() {
+    const value = this.value.trim();
+    if (value) {
+        clearTimeout(fetchTimeout);
+        fetchTimeout = setTimeout(function() {
+            fetchStudentInfo();
+        }, 500);
+    }
+}); {% endcomment %}
+
+function fetchStudentInfo() {
+    const matricId = document.getElementById('matricId').value.trim();
+    
+    if (!matricId) {
+        document.getElementById('studentInfo').style.display = 'none';
+        return;
+    }
+
+    // Fetch student data via AJAX
+    fetch(`/api/student/${matricId}/`)
+        .then(response => {
+            if (!response.ok) throw new Error('Student not found');
+            return response.json();
+        })
+        .then(data => {
+            document.getElementById('studentName').value = data.name;
+            document.getElementById('studentCourse').value = data.course;
+            document.getElementById('studentSession').value = data.session;
+            document.getElementById('studentInfo').style.display = 'block';
+            document.getElementById('errorAlert').style.display = 'none';
+        })
+        .catch(error => {
+            document.getElementById('errorAlert').style.display = 'block';
+            document.getElementById('errorMessage').textContent = error.message;
+            document.getElementById('studentInfo').style.display = 'none';
+        });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const dateInput = document.getElementById('outing_date');
+    const timeInput = document.getElementById('outing_time');
+
+    if (dateInput && timeInput) {
+        const now = new Date();
+
+        // 1. Pre-fill with local date (format: YYYY-MM-DD)
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        dateInput.value = `${year}-${month}-${day}`;
+
+        // 2. Pre-fill with local time (format: HH:MM in 24-hour style)
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        timeInput.value = `${hours}:${minutes}`;
+    }
+});
+
+// Set minimum date to today
+document.getElementById('outingDate').min = new Date().toISOString().split('T')[0];
+</script>
+
+{% endblock %}

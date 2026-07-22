@@ -5,12 +5,16 @@ from django.db import models
 # Create your models here.
 
 class Student(models.Model):
-    name = models.CharField(max_length=100)
-    course = models.CharField(max_length=100)
-    session = models.CharField(max_length=20)
-    student_id = models.CharField(max_length=12, unique=True)
-    id_card = models.CharField(max_length=50, unique=True)
-    rfid_uid = models.CharField(max_length=50, unique=True)
+    name = models.CharField("Name", max_length=100)
+    course = models.CharField("Course", max_length=100)
+    session = models.CharField("Session", max_length=20)
+    student_id = models.CharField("Matric ID", max_length=12, unique=True)
+    id_card = models.CharField("IC Number", max_length=50, unique=True)
+    rfid_uid = models.CharField("RFID UID", max_length=50, unique=True)
+    phone_number = models.CharField("Phone Number", max_length=20, blank=True, null=True)
+    tvetmara_email = models.EmailField("TVETMARA E-MAIL", blank=True, null=True)
+    address = models.TextField("Address", blank=True, null=True)
+    parent_contact = models.CharField("Parent/Guardian Contact", max_length=20, blank=True, null=True)
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name="student_profile")
 
@@ -70,3 +74,14 @@ class OutingRequest(models.Model):
 
     def __str__(self):
         return f"{self.student.name} - {self.destination} ({self.status})"
+    
+class SystemSettings(models.Model):
+    is_simulation_active = models.BooleanField(default=False, verbose_name="Enable Time Simulation")
+    simulated_datetime = models.DateTimeField(blank=True, null=True, verbose_name="Simulated System Time")
+
+    class Meta:
+        verbose_name = "System Setting"
+        verbose_name_plural = "System Settings"
+
+    def __str__(self):
+        return "System Configuration Override"
