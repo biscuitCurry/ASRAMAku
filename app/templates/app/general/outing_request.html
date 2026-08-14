@@ -54,8 +54,8 @@
                             <hr>
 
                             <div class="alert alert-info py-2 mb-3">
-                                <strong>Quick Guide:</strong> Use the dashboard quick toggle for immediate check-in/out actions. The outing request page is reserved for formal requests.<br>
-                                <strong>Curfew Rules:</strong> Daily return limits are 7:00 PM (Sunday – Thursday) and 10:00 PM (Friday & Saturday). Late returns are automatically flagged.
+                                Use the dashboard quick toggle for immediate go/in actions. The outing request page is optional for formal requests.<br>
+                                Daily return limits are 7:00 PM on Sunday to Thursday and 10:00 PM on Friday and Saturday. Late returns are flagged.
                             </div>
 
                             <!-- Destination -->
@@ -124,7 +124,7 @@ document.getElementById('matricId').addEventListener('keypress', function(e) {
 });
 
 // Auto-fetch on blur after 500ms delay
-{% comment %} document.getElementById('matricId').addEventListener('blur', function() {
+document.getElementById('matricId').addEventListener('blur', function() {
     const value = this.value.trim();
     if (value) {
         clearTimeout(fetchTimeout);
@@ -132,7 +132,7 @@ document.getElementById('matricId').addEventListener('keypress', function(e) {
             fetchStudentInfo();
         }, 500);
     }
-}); {% endcomment %}
+});
 
 function fetchStudentInfo() {
     const matricId = document.getElementById('matricId').value.trim();
@@ -161,26 +161,6 @@ function fetchStudentInfo() {
             document.getElementById('studentInfo').style.display = 'none';
         });
 }
-
-document.addEventListener("DOMContentLoaded", function() {
-    const dateInput = document.getElementById('outing_date');
-    const timeInput = document.getElementById('outing_time');
-
-    if (dateInput && timeInput) {
-        const now = new Date();
-
-        // 1. Pre-fill with local date (format: YYYY-MM-DD)
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        dateInput.value = `${year}-${month}-${day}`;
-
-        // 2. Pre-fill with local time (format: HH:MM in 24-hour style)
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        timeInput.value = `${hours}:${minutes}`;
-    }
-});
 
 // Set minimum date to today
 document.getElementById('outingDate').min = new Date().toISOString().split('T')[0];

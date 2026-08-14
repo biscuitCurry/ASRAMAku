@@ -24,7 +24,7 @@ from app import views
 
 urlpatterns = [
     path('', include('app.urls')),
-    path('accounts/', include('app.urls')),
+    # path('accounts/', include('app.urls')),
     path('admin/', admin.site.urls),
     path('', include('pwa.urls')),
 ]

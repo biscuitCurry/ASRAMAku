@@ -21,12 +21,23 @@ class StudentForm(forms.ModelForm):
             "session": forms.TextInput(attrs={"id": "session-input", "class": "form-control", "placeholder": "Session (e.g., JUL-DIS 2024)"}),
             "student_id": forms.TextInput(attrs={"class": "form-control", "placeholder": "Matric ID (e.g., 1234567890)"}),
             "id_card": forms.TextInput(attrs={"class": "form-control", "placeholder": "IC Number"}),
-            "rfid_uid": forms.TextInput(attrs={"class": "form-control", "placeholder": "RFID UID (Tap your IC on RFID scanner)"}),
+            "rfid_uid": forms.TextInput(attrs={"id": "rfid-input", "class": "form-control", "placeholder": "RFID UID (Tap your IC on RFID scanner)"}), # Added explicit ID
             "address": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Address"}),
             "phone_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "Phone Number"}),
             "tvetmara_email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "TVETMARA Email (e.g., student@sgpetani.tvetmara.edu.my)"}),
             "parent_contact": forms.TextInput(attrs={"class": "form-control", "placeholder": "Parent/Guardian Contact"}),
         }
+
+    # ⚡ NEW CODE: Enforce mandatory requirement checks explicitly
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Core mandatory fields
+        self.fields['name'].required = True
+        self.fields['course'].required = True
+        self.fields['session'].required = True
+        self.fields['student_id'].required = True
+        self.fields['id_card'].required = True
+        self.fields['rfid_uid'].required = True
 
 
 class OutingRequestForm(forms.ModelForm):

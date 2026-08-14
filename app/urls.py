@@ -1,6 +1,6 @@
 from django.urls import path
-from app import views
 
+from app import views
 
 urlpatterns = [
     # ==========================================
@@ -11,7 +11,6 @@ urlpatterns = [
     path("logout/", views.log_out, name="logout"),
     # path("register/", views.register, name="register"),  # Public self-registration route
     path("dashboard/", views.dashboard, name="dashboard"),
-
     # ==========================================
     # Student Management (Standardized Plurals)
     # ==========================================
@@ -19,7 +18,6 @@ urlpatterns = [
     path("students/add/", views.add_student, name="add_student"),
     path("students/edit/<int:pk>/", views.edit_student, name="edit_student"),
     path("students/delete/<int:pk>/", views.delete_student, name="delete_student"),
-
     # ==========================================
     # Outing Request Management
     # ==========================================
@@ -28,7 +26,6 @@ urlpatterns = [
     path("outing/approve/<int:pk>/", views.approve_request, name="approve_request"),
     path("outing/reject/<int:pk>/", views.reject_request, name="reject_request"),
     path("outing/view/<int:pk>/", views.view_request, name="view_request"),
-
     # ==========================================
     # API Endpoints
     # ==========================================

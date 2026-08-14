@@ -1,243 +1,328 @@
-{% extends "app/base/base.html" %}
-
-{% block content %}
+{% extends "app/base/base.html" %} {% block content %}
 <div class="container mt-5">
-    <div class="row">
-        <div class="col-md-12">
-            <h2>Student Dashboard</h2>
-            <hr>
+  <div class="row">
+    <div class="col-md-12">
+      <h2>Student Dashboard</h2>
+      <hr />
 
-            <!-- Updated Messages Section in dashboard.html -->
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show auto-fade" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
+      <!-- Updated Messages Section in dashboard.html -->
+      {% if messages %} {% for message in messages %}
+      <div
+        class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show auto-fade"
+        role="alert"
+      >
+        {{ message }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+        ></button>
+      </div>
+      {% endfor %} {% endif %}
 
-            <!-- Quick Check In / Check Out Form -->
-            <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <h5>Check In / Out</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST" id="quickToggleForm">
-                        {% csrf_token %}
-                        
-                        <div class="mb-3">
-                            <label for="student_id" class="form-label">Enter Student ID / ID Card / RFID:</label>
-                            <div class="input-group">
-                                <input type="text" id="student_id" name="student_id" class="form-control" required autofocus >
-                                <button type="submit" class="btn btn-success">Submit</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Student List & Date Filter -->
-            <div class="card">
-                <div class="card-header bg-secondary text-white d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <h5 class="mb-0">Student Monitoring</h5>
-                        <span class="badge bg-light text-dark fw-normal">
-                            Viewing: {% if selected_date_str %}{{ selected_date_str }}{% else %}Today{% endif %}
-                        </span>
-                    </div>
-                    <small class="text-light">Last updated: <span id="lastUpdate">now</span></small>
-                </div>
-                <div class="card-body">
-                    
-                    <!-- Day Navigation Controls -->
-                    <div class="row align-items-center mb-4 g-3">
-                        <!-- Button group removed; date picker column widened to full width (col-12) -->
-                        <div class="col-12">
-                            <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i> Jump to Date:</span>
-                                <input type="date" id="datePicker" class="form-control" value="{{ selected_date_str }}" onchange="navigateDate(this.value)">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Log Table -->
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Student ID</th>
-                                    <th>Course</th>
-                                    <th>Approval Status</th>
-                                    <th>Presence</th>
-                                    <th>Late Check-In</th>
-                                    <th>Out (Date & Time)</th>
-                                    <th>In (Date & Time)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="studentTable">
-                                {% for item in log_entries %} 
-                                {% with student=item.student status=item.request_status log=item.log %}
-                                
-                                <!-- CHANGE THIS LINE TO ADD THE CONDITIONAL BOOTSTRAP CLASSES -->
-                                <tr class="{% if item.is_late %}table-danger{% else %}table-success{% endif %}">
-                                    
-                                    <td><strong>{{ student.name }}</strong></td>
-                                    <td>{{ student.student_id }}</td>
-                                    <td>{{ student.course }}</td>
-                                    <td>
-                                        {% if status == "Approved" %}
-                                            <span class="badge bg-success">Approved</span>
-                                        {% else %}
-                                            <span class="badge bg-light text-dark">None</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if log.check_in_time %}
-                                            <span class="badge bg-info">In</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">Out</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if item.is_late %}
-                                            <span class="badge bg-danger">Late</span>
-                                        {% else %}
-                                            <span class="badge bg-success">On time</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if log.check_out_time %}
-                                            <span class="text-dark fw-bold">{{ log.check_out_time|date:"M d, Y H:i" }}</span>
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if log.check_in_time %}
-                                            <span class="text-dark fw-bold">{{ log.check_in_time|date:"M d, Y H:i" }}</span>
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endwith %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
+      <!-- Quick Check In / Check Out Form -->
+      <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+          <h5>Check In / Out</h5>
         </div>
+        <div class="card-body">
+          <form method="POST" id="quickToggleForm">
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label for="student_id" class="form-label"
+                >Enter Student ID / ID Card / RFID:</label
+              >
+              <div class="input-group">
+                <input
+                  type="text"
+                  id="student_id"
+                  name="student_id"
+                  class="form-control"
+                  required
+                  autofocus
+                />
+                <button type="submit" class="btn btn-success">Submit</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Student List & Date Filter -->
+      <div class="card">
+        <div
+          class="card-header bg-secondary text-white d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2"
+        >
+          <div class="d-flex align-items-center gap-2">
+            <h5 class="mb-0">Student Monitoring</h5>
+            <span class="badge bg-light text-dark fw-normal">
+              Viewing: {% if selected_date_str %}{{ selected_date_str }}{% else%}Today{% endif %}
+            </span>
+          </div>
+          <small class="text-light"
+            >Last updated: <span id="lastUpdate">now</span></small
+          >
+        </div>
+        <div class="card-body">
+          <!-- Day Navigation Controls -->
+          <div class="row align-items-center mb-4 g-3">
+            <!-- Button group removed; date picker column widened to full width (col-12) -->
+            <div class="col-12">
+              <div class="input-group">
+                <span class="input-group-text bg-light"
+                  ><i class="bi bi-calendar-event"></i> Jump to Date:</span
+                >
+                <input
+                  type="date"
+                  id="datePicker"
+                  class="form-control"
+                  value="{{ selected_date_str }}"
+                  onchange="navigateDate(this.value)"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Log Table -->
+          <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th>Name</th>
+                  <th>Student ID</th>
+                  <th>Course</th>
+                  <th>Approval Status</th>
+                  <th>Presence</th>
+                  <th>Late Check-In</th>
+                  <th>Out (Date & Time)</th>
+                  <th>In (Date & Time)</th>
+                </tr>
+              </thead>
+              <tbody id="studentTable">
+                {% for item in log_entries %}
+                <tr
+                  class="{% if item.is_late %}table-danger{% else %}table-success{% endif %}"
+                >
+                  <td><strong>{{ item.student.name }}</strong></td>
+                  <td>{{ item.student.student_id }}</td>
+                  <td>{{ item.student.course }}</td>
+                  <td>
+                    {% if item.request_status == "Approved" %}
+                    <span class="badge bg-success">Approved</span>
+                    {% else %}
+                    <span class="badge bg-light text-dark">None</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if item.log.check_in_time %}
+                    <span class="badge bg-info">In</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Out</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if item.is_late %}
+                    <span class="badge bg-danger">Late</span>
+                    {% else %}
+                    <span class="badge bg-success">On time</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if item.log.check_out_time %}
+                    <span class="text-dark fw-bold"
+                      >{{ item.log.check_out_time|date:"M d, Y H:i" }}</span
+                    >
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if item.log.check_in_time %}
+                    <span class="text-dark fw-bold"
+                      >{{ item.log.check_in_time|date:"M d, Y H:i" }}</span
+                    >
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="8" class="text-center text-muted">
+                    No records found for this date.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <script>
-// Navigate to a chosen date on picker change
-function navigateDate(dateStr) {
-    if (dateStr) {
-        window.location.search = `?date=${dateStr}`;
-    }
-}
+  let manualDateSelection = false;
 
-function updateLastUpdated() {
+  async function navigateDate(dateStr) {
+    if (!dateStr) return;
+
+    manualDateSelection = true;
+    const targetUrl = new URL(window.location.href);
+    targetUrl.searchParams.set("date", dateStr);
+
+    try {
+      const response = await fetch(targetUrl, {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          Accept: "text/html",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to load dashboard data");
+      }
+
+      const html = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+
+      const newTable = doc.querySelector("#studentTable");
+      const newBadge = doc.querySelector(
+        ".card-header .badge.bg-light.text-dark.fw-normal",
+      );
+      const newDateInput = doc.querySelector("#datePicker");
+
+      const currentTable = document.querySelector("#studentTable");
+      const currentBadge = document.querySelector(
+        ".card-header .badge.bg-light.text-dark.fw-normal",
+      );
+      const currentDateInput = document.getElementById("datePicker");
+
+      if (newTable && currentTable) {
+        currentTable.innerHTML = newTable.innerHTML;
+      }
+
+      if (newBadge && currentBadge) {
+        currentBadge.textContent = newBadge.textContent.trim();
+      }
+
+      if (newDateInput && currentDateInput) {
+        currentDateInput.value = newDateInput.value;
+      }
+
+      history.replaceState({}, "", targetUrl);
+      setTimeout(() => {
+        manualDateSelection = false;
+      }, 200);
+    } catch (error) {
+      console.error("Date navigation failed:", error);
+      window.location.search = `?date=${dateStr}`;
+    }
+  }
+
+  function updateLastUpdated() {
     const serverTimeUrl = '{% url "server_time" %}';
     // Only fetch if Django successfully compiled the template url tag
-    if (serverTimeUrl && !serverTimeUrl.startsWith('{%')) {
-        fetch(serverTimeUrl)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('lastUpdate').textContent = data.server_time || 'sync pending';
-            })
-            .catch(() => {
-                document.getElementById('lastUpdate').textContent = 'sync pending';
-            });
+    if (serverTimeUrl && !serverTimeUrl.startsWith("{%")) {
+      fetch(serverTimeUrl)
+        .then((response) => response.json())
+        .then((data) => {
+          document.getElementById("lastUpdate").textContent =
+            data.server_time || "sync pending";
+        })
+        .catch(() => {
+          document.getElementById("lastUpdate").textContent = "sync pending";
+        });
     } else {
-        document.getElementById('lastUpdate').textContent = 'sync pending';
+      document.getElementById("lastUpdate").textContent = "sync pending";
     }
-}
+  }
 
-const quickToggleForm = document.getElementById('quickToggleForm');
-const quickToggleInput = document.getElementById('student_id');
+  const quickToggleForm = document.getElementById("quickToggleForm");
+  const quickToggleInput = document.getElementById("student_id");
 
-if (quickToggleForm && quickToggleInput) {
+  if (quickToggleForm && quickToggleInput) {
     // Initial focus on load
     quickToggleInput.focus();
 
     // Submit form on Enter keypress
-    quickToggleInput.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            quickToggleForm.requestSubmit();
-        }
+    quickToggleInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        quickToggleForm.requestSubmit();
+      }
     });
 
     // 1. Keep focus when clicking on non-interactive regions of the screen
-    document.addEventListener('click', function (event) {
-        const isInteractive = event.target.closest('input, button, a, select, textarea, [role="button"]');
-        if (!isInteractive) {
-            quickToggleInput.focus();
-        }
+    document.addEventListener("click", function (event) {
+      const isInteractive = event.target.closest(
+        'input, button, a, select, textarea, [role="button"]',
+      );
+      if (!isInteractive) {
+        quickToggleInput.focus();
+      }
     });
 
     // 2. Automatically refocus if the input loses focus (blur), unless transitioning to another input/button
-    quickToggleInput.addEventListener('blur', function (event) {
-        setTimeout(() => {
-            const activeEl = document.activeElement;
-            const isInteractive = activeEl && (
-                activeEl.tagName === 'INPUT' || 
-                activeEl.tagName === 'BUTTON' || 
-                activeEl.tagName === 'A' || 
-                activeEl.tagName === 'SELECT' || 
-                activeEl.tagName === 'TEXTAREA'
-            );
-            // If the newly active element isn't another interactive field, pull focus back
-            if (!isInteractive) {
-                quickToggleInput.focus();
-            }
-        }, 10);
+    quickToggleInput.addEventListener("blur", function (event) {
+      setTimeout(() => {
+        const activeEl = document.activeElement;
+        const isInteractive =
+          activeEl &&
+          (activeEl.tagName === "INPUT" ||
+            activeEl.tagName === "BUTTON" ||
+            activeEl.tagName === "A" ||
+            activeEl.tagName === "SELECT" ||
+            activeEl.tagName === "TEXTAREA");
+        // If the newly active element isn't another interactive field, pull focus back
+        if (!isInteractive) {
+          quickToggleInput.focus();
+        }
+      }, 10);
     });
-}
+  }
 
-// Guard real-time Server-Sent Events updates so they don't break in non-Django preview configurations
-const eventUrl = '{% url "dashboard_events" %}';
-if (eventUrl && !eventUrl.startsWith('{%')) {
+  // Guard real-time Server-Sent Events updates so they don't break in non-Django preview configurations
+  const eventUrl = '{% url "dashboard_events" %}';
+  if (eventUrl && !eventUrl.startsWith("{%")) {
     const dashboardEvents = new EventSource(eventUrl);
-    dashboardEvents.addEventListener('update', function () {
+    dashboardEvents.addEventListener("update", function () {
+      if (!manualDateSelection) {
         window.location.reload();
+      }
     });
     dashboardEvents.onerror = function () {
-        console.warn('Dashboard updates stream disconnected.');
+      console.warn("Dashboard updates stream disconnected.");
     };
 
-    window.addEventListener('beforeunload', function () {
-        dashboardEvents.close();
+    window.addEventListener("beforeunload", function () {
+      dashboardEvents.close();
     });
-} else {
-    console.warn('Real-time events disabled in preview environment.');
-}
+  } else {
+    console.warn("Real-time events disabled in preview environment.");
+  }
 
-updateLastUpdated();
+  updateLastUpdated();
 
-// Automatically fade out temporary alerts after 1 second
-document.addEventListener("DOMContentLoaded", function() {
-    const alerts = document.querySelectorAll('.alert.auto-fade');
-    
-    alerts.forEach(function(alert) {
-        setTimeout(function() {
-            // Trigger Bootstrap's built-in CSS fade transition
-            alert.classList.remove('show');
-            
-            // Clean up the DOM element space completely after CSS finishes transitioning
-            setTimeout(function() {
-                alert.remove();
-            }, 150); 
-            
-        }, 1000); // 1000ms = 1 second delay before fading out
+  // Automatically fade out temporary alerts after 1 second
+  document.addEventListener("DOMContentLoaded", function () {
+    const alerts = document.querySelectorAll(".alert.auto-fade");
+
+    alerts.forEach(function (alert) {
+      setTimeout(function () {
+        // Trigger Bootstrap's built-in CSS fade transition
+        alert.classList.remove("show");
+
+        // Clean up the DOM element space completely after CSS finishes transitioning
+        setTimeout(function () {
+          alert.remove();
+        }, 150);
+      }, 1000); // 1000ms = 1 second delay before fading out
     });
-});
+  });
 </script>
 
 {% endblock %}

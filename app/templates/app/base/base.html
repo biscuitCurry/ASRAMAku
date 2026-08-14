@@ -62,5 +62,27 @@
         <!-- Page Specific Script Blocks -->
         {% block scripts %}{% endblock %}
 
+        <script>
+            function logoutOnClose() {
+                try {
+                    const logoutUrl = '/logout/?close=1';
+                    if (navigator.sendBeacon) {
+                        navigator.sendBeacon(logoutUrl, '');
+                    } else {
+                        fetch(logoutUrl, {
+                            method: 'GET',
+                            credentials: 'same-origin',
+                            keepalive: true,
+                        }).catch(() => {});
+                    }
+                } catch (error) {
+                    console.warn('Close logout request failed:', error);
+                }
+            }
+
+            window.addEventListener('beforeunload', logoutOnClose);
+            window.addEventListener('pagehide', logoutOnClose);
+        </script>
+
     </body>
 </html>

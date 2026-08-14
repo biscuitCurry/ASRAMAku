@@ -62,40 +62,47 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const sessionInput = document.getElementById('session-input');
+    const rfidInput = document.getElementById('rfid-input');
 
+    // ⚡ 1. PREVENT RFID SCANNER FROM AUTO-SUBMITTING THE ENTIRE FORM
+    if (rfidInput) {
+        rfidInput.addEventListener('keydown', function (e) {
+            // Check if the scanner sent an "Enter" key code signaling text input end
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Stop the form from submitting immediately!
+                
+                // Shift focus to the next field (e.g., Address) so the user can continue typing
+                const nextInput = document.getElementsByName('address')[0];
+                if (nextInput) {
+                    nextInput.focus();
+                }
+            }
+        });
+    }
+
+    // 2. SESSION INPUT FORMATTER (Kept original functional code block)
     if (sessionInput) {
         sessionInput.addEventListener('input', function (e) {
-            // 1. Force uppercase immediately
             let value = e.target.value.toUpperCase();
-            
-            // 2. Strip out any existing spaces or dashes so we can rebuild cleanly
             let cleanValue = value.replace(/[^A-Z0-9]/g, '');
-            
             let formattedValue = '';
 
-            // 3. Extract the parts based on character length typed so far
             if (cleanValue.length > 0) {
-                // First Month (up to 3 characters)
                 formattedValue += cleanValue.substring(0, 3);
             }
             if (cleanValue.length > 3) {
-                // Add the clean spacing and dash, then Second Month (up to 3 characters)
                 formattedValue += ' - ' + cleanValue.substring(3, 6);
             }
             if (cleanValue.length > 6) {
-                // Add a space, then the Year (up to 4 digits)
                 formattedValue += ' ' + cleanValue.substring(6, 10);
             }
 
-            // 4. Update the input box value
             e.target.value = formattedValue;
         });
 
-        // Prevent users from accidentally breaking the format with trailing spaces on backspace
         sessionInput.addEventListener('keydown', function (e) {
             if (e.key === 'Backspace') {
                 let value = e.target.value;
-                // If backspacing into the " - " or trailing space, wipe out the previous block character
                 if (value.endsWith(' - ') || value.endsWith(' ')) {
                     e.preventDefault();
                     e.target.value = value.trim().substring(0, value.length - 3);
