@@ -33,4 +33,5 @@ urlpatterns = [
     path("api/server-time/", views.server_time, name="server_time"),
     path("api/dashboard-updates/", views.dashboard_updates, name="dashboard_updates"),
     path("api/dashboard-events/", views.dashboard_events, name="dashboard_events"),
+    path("api/outing-time-settings/", views.outing_time_settings_view, name="outing_time_settings"),
 ]

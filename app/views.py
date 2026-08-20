@@ -1,10 +1,12 @@
 import datetime
+import json
 import logging
 from queue import Empty, SimpleQueue
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db import ProgrammingError
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -12,25 +14,78 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from .forms import StudentForm
-from .models import CheckLog, OutingRequest, Student
+from .models import CheckLog, OutingRequest, OutingTimeSettings, Student
 
 DASHBOARD_EVENT_SUBSCRIBERS = []
 logger = logging.getLogger(__name__)
 
 
+def normalize_time_value(value):
+    """Return a real datetime.time object from either string or TimeField data."""
+    if value is None:
+        return datetime.time(22, 0)
+    if isinstance(value, datetime.time):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.datetime.strptime(value, "%H:%M").time()
+        except ValueError:
+            try:
+                return datetime.datetime.fromisoformat(value).time()
+            except ValueError:
+                return datetime.time(22, 0)
+    if hasattr(value, "time"):
+        try:
+            return value.time()
+        except TypeError:
+            pass
+    return datetime.time(22, 0)
+
+
+def get_request_value(request, *names):
+    """Read a value from either POST form data or JSON payload."""
+    for name in names:
+        if request.method == "POST" and name in request.POST:
+            return request.POST.get(name)
+
+    if request.body:
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+            if isinstance(payload, dict):
+                for name in names:
+                    if name in payload:
+                        return payload.get(name)
+        except (TypeError, ValueError, UnicodeDecodeError):
+            pass
+
+    return None
+
+
+def get_outing_time_settings():
+    """Return the singleton outing-time settings, creating them when needed."""
+    try:
+        settings, _ = OutingTimeSettings.objects.get_or_create(pk=1)
+        return settings
+    except ProgrammingError:
+        class DefaultOutingTimeSettings:
+            curfew_time = datetime.time(22, 0)
+            max_outing_duration_hours = 4
+            late_threshold_minutes = 15
+
+        return DefaultOutingTimeSettings()
+
+
 def get_checkin_limit_for_datetime(value):
     """Return the allowed check-in cutoff for the given day."""
-    return (
-        datetime.time(19, 0)
-        if value.weekday() in {0, 1, 2, 3, 6}
-        else datetime.time(22, 0)
-    )
+    return normalize_time_value(get_outing_time_settings().curfew_time)
 
 
 def is_late_checkin(check_in_time):
-    """Return True if the student checked in after the permitted time."""
-    limit = get_checkin_limit_for_datetime(check_in_time)
-    return check_in_time.time() > limit
+    """Return True if the student checked in after the permitted time plus grace buffer."""
+    settings = get_outing_time_settings()
+    limit = normalize_time_value(settings.curfew_time)
+    grace = datetime.timedelta(minutes=settings.late_threshold_minutes)
+    return check_in_time.time() > (datetime.datetime.combine(datetime.date.today(), limit) + grace).time()
 
 
 def normalize_identifier(value):
@@ -180,6 +235,63 @@ def log_out(request):
 
     messages.success(request, "You have been logged out successfully.")
     return redirect("index")
+
+
+@login_required
+@user_passes_test(lambda user: user.is_staff)
+def outing_time_settings_view(request):
+    """Fetch or update the app-wide outing controls."""
+    settings = get_outing_time_settings()
+
+    if request.method == "GET":
+        curfew_value = normalize_time_value(getattr(settings, "curfew_time", datetime.time(22, 0)))
+        return JsonResponse(
+            {
+                "curfew_time": curfew_value.strftime("%H:%M"),
+                "max_outing_duration_hours": getattr(settings, "max_outing_duration_hours", 4),
+                "late_threshold_minutes": getattr(settings, "late_threshold_minutes", 15),
+            }
+        )
+
+    if request.method == "POST":
+        try:
+            curfew_time = get_request_value(request, "curfew_time", "curfewTime")
+            max_hours = get_request_value(request, "max_outing_duration_hours", "maxOutingDurationHours")
+            late_threshold = get_request_value(request, "late_threshold_minutes", "lateThresholdMinutes")
+
+            if not curfew_time:
+                raise ValueError("Curfew time is required.")
+
+            datetime.datetime.strptime(str(curfew_time), "%H:%M")
+
+            max_hours_value = int(max_hours or 4)
+            late_threshold_value = int(late_threshold or 15)
+
+            if max_hours_value <= 0:
+                raise ValueError("Maximum outing duration must be greater than zero.")
+            if late_threshold_value < 0:
+                raise ValueError("Late threshold cannot be negative.")
+
+            settings.curfew_time = normalize_time_value(str(curfew_time))
+            settings.max_outing_duration_hours = max_hours_value
+            settings.late_threshold_minutes = late_threshold_value
+            settings.save()
+
+            is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.content_type == "application/json"
+            if is_ajax:
+                return JsonResponse({"success": True, "message": "Outing settings saved."})
+
+            messages.success(request, "Outing time settings saved successfully.")
+            return redirect("dashboard")
+        except (TypeError, ValueError):
+            message = "Please enter valid values for the outing settings."
+            is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.content_type == "application/json"
+            if is_ajax:
+                return JsonResponse({"success": False, "error": message}, status=400)
+            messages.error(request, message)
+            return redirect("dashboard")
+
+    return JsonResponse({"error": "Method not allowed."}, status=405)
 
 
 # -------------------------

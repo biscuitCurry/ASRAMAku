@@ -1,7 +1,22 @@
+import datetime
+
 from django.contrib.auth.models import User
 from django.db import models
 
 # Create your models here.
+
+
+class OutingTimeSettings(models.Model):
+    curfew_time = models.TimeField(default=datetime.time(22, 0))
+    max_outing_duration_hours = models.PositiveIntegerField(default=4)
+    late_threshold_minutes = models.PositiveIntegerField(default=15)
+
+    class Meta:
+        verbose_name = "Outing Time Settings"
+        verbose_name_plural = "Outing Time Settings"
+
+    def __str__(self):
+        return "Outing Time Settings"
 
 
 class Student(models.Model):
@@ -47,6 +62,12 @@ class Student(models.Model):
         ],
         default="In",
     )
+
+    def save(self, *args, **kwargs):
+        # Ensure the student's name is stored uppercase
+        if self.name:
+            self.name = self.name.upper()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name

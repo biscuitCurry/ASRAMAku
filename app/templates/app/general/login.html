@@ -1,45 +1,46 @@
 {% extends "app/base/base.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-6 mx-auto">
-            <div class="card shadow-lg">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </h3>
-                </div>
-                <div class="card-body">
+<div class="login-shell">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-5 col-md-7 col-sm-10">
+                <div class="card login-card panel-surface">
+                    <div class="card-header text-center">
+                        <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
+                            <span class="brand-mark" aria-hidden="true" style="width: 34px; height: 34px;"></span>
+                            <h3 class="mb-0">ASRAMAku</h3>
+                        </div>
+                        <p class="mb-0 mt-2 text-white-50">Student access portal</p>
+                    </div>
+                    <div class="card-body">
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                    <i class="fas fa-exclamation-circle"></i> {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
 
-                    <!-- Display Error/Success Messages -->
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                <i class="fas fa-exclamation-circle"></i> {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <form method="POST" action="{% url 'login' %}">
+                            {% csrf_token %}
+
+                            <div class="mb-3">
+                                <label for="username" class="form-label fw-semibold">Username</label>
+                                <input type="text" id="username" name="username" class="form-control" placeholder="Enter your username" required autofocus>
                             </div>
-                        {% endfor %}
-                    {% endif %}
 
-                    <form method="POST" action="{% url 'login' %}">
-                        {% csrf_token %}
-                        
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username:</label>
-                            <input type="text" id="username" name="username" class="form-control" placeholder="Enter your username" required autofocus>
-                        </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label fw-semibold">Password</label>
+                                <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+                            </div>
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password:</label>
-                            <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100 mb-3">
-                            <i class="fas fa-sign-in-alt"></i> Login
-                        </button>
-                    </form>
-
+                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                <i class="fas fa-sign-in-alt me-2"></i> Login
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

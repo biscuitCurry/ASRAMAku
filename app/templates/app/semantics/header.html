@@ -1,74 +1,71 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="{% url 'index' %}">
-            <i class="fas fa-home"></i> ASRAMAku
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                {% if user.is_authenticated %}
-                    {% if user.is_staff %}
-                        <!-- Visible to ALL Staff Members (Guards and Wardens) -->
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard' %}">
-                                <i class="fas fa-tachometer-alt"></i> Dashboard
-                            </a>
-                        </li>
-                        
-                        <!-- 🔒 WARDEN ONLY TABS: Hidden if the username contains "GUARD" -->
-                        {% if "GUARD" not in user.username %}
+<header class="topbar">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container main-shell">
+            <a class="navbar-brand" href="{% url 'index' %}">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <span class="brand-wordmark"><span>A</span><span class="brand-red">SRAMA</span><span>ku</span></span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                    {% if user.is_authenticated %}
+                        {% if user.is_staff %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'manage_students' %}">
-                                    <i class="fas fa-users"></i> Manage Students
+                                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                                    <i class="fas fa-tachometer-alt"></i> Dashboard
                                 </a>
                             </li>
+                            {% if "GUARD" not in user.username %}
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'manage_students' %}active{% endif %}" href="{% url 'manage_students' %}">
+                                        <i class="fas fa-users"></i> Students
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'manage_requests' %}active{% endif %}" href="{% url 'manage_requests' %}">
+                                        <i class="fas fa-file-alt"></i> Requests
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-warning" href="{% url 'send_outing_request' %}" title="Test the outing form">
+                                        <i class="fas fa-flask"></i> Test Form
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% else %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'manage_requests' %}">
-                                    <i class="fas fa-file-alt"></i> Outing Requests
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-warning" href="{% url 'send_outing_request' %}" title="Test the outing form">
-                                    <i class="fas fa-flask"></i> Submit Outing Form (Test)
+                                <a class="nav-link {% if request.resolver_match.url_name == 'send_outing_request' %}active{% endif %}" href="{% url 'send_outing_request' %}">
+                                    <i class="fas fa-door-open"></i> Outing Request
                                 </a>
                             </li>
                         {% endif %}
-                        
-                    {% else %}
-                        <!-- Regular Student Only -->
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'send_outing_request' %}">
-                                <i class="fas fa-door-open"></i> Outing Request
-                            </a>
-                        </li>
-                    {% endif %}
-                    
-                    <!-- Common for all authenticated users (SB Admin 2 Style) -->
+
                         <li class="nav-item dropdown no-arrow position-relative" id="userMenuContainer">
-                            <a class="nav-link text-light dropdown-toggle" href="#" id="userDropdown" role="button" style="cursor: pointer;">
-                                <span class="mr-2 d-none d-lg-inline text-gray-400 small me-2">{{ user.username }}</span>
+                            <a class="user-pill dropdown-toggle" href="#" id="userDropdown" role="button" style="cursor: pointer;">
+                                <span class="username d-none d-lg-inline">{{ user.username }}</span>
                                 <i class="fas fa-user-circle fa-lg"></i>
                             </a>
-                            
-                            <!-- Dropdown - User Information -->
-                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow animated--grow-in" 
-                                id="userDropdownMenu" 
-                                style="display: none; position: absolute; right: 0; top: 100%; z-index: 1050; min-width: 160px;">
+                            <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in" id="userDropdownMenu" style="display: none; position: absolute; right: 0; top: 100%; z-index: 1050; min-width: 210px;">
+                                {% if user.is_staff %}
+                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#outingSettingsModal">
+                                    <i class="fas fa-clock fa-sm fa-fw me-2"></i>
+                                    Outing Time Settings
+                                </a>
+                                {% endif %}
                                 <a class="dropdown-item text-danger" href="#" onclick="confirmLogout(event)">
-                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw me-2"></i>
                                     Logout
                                 </a>
                             </div>
                         </li>
-                {% else %}
-                    <!-- Not Authenticated - Only Login (hidden on login page) -->
-                {% endif %}
-            </ul>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
+</header>
 
 <!-- Logout Modal -->
 <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
@@ -91,10 +88,126 @@
     </div>
 </div>
 
+<div class="modal fade" id="outingSettingsModal" tabindex="-1" aria-labelledby="outingSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="outingSettingsModalLabel">
+                    <i class="fas fa-clock me-2"></i> Outing Time Settings
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="outingSettingsForm" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row justify-content-center g-3">
+                        <div class="col-12 col-md-8">
+                            <label for="curfew_time" class="form-label fw-semibold d-inline-flex align-items-center gap-2">
+                                Curfew / Return Time
+                                <span class="info-tooltip-trigger" tabindex="0" aria-label="Curfew / Return Time help: The mandatory deadline time by which all students must be checked back in for the day (e.g., 22:00)." data-bs-toggle="tooltip" data-bs-placement="top" title="The mandatory deadline time by which all students must be checked back in for the day (e.g., 22:00).">
+                                    <i class="fas fa-circle-info"></i>
+                                </span>
+                            </label>
+                            <input type="time" id="curfew_time" name="curfew_time" class="form-control form-control-lg" required>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-muted small text-center">
+                        This value sets the default daily check-in deadline across the application.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function confirmLogout(event) {
     event.preventDefault();
     const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
     logoutModal.show();
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+}
+
+async function loadOutingSettings() {
+    try {
+        const response = await fetch('{% url "outing_time_settings" %}', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const curfewInput = document.getElementById('curfew_time');
+
+        if (curfewInput && data.curfew_time) curfewInput.value = data.curfew_time;
+    } catch (error) {
+        console.warn('Unable to load outing settings:', error);
+    }
+}
+
+const outingSettingsModal = document.getElementById('outingSettingsModal');
+if (outingSettingsModal) {
+    outingSettingsModal.addEventListener('shown.bs.modal', function () {
+        loadOutingSettings();
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+}
+
+const outingSettingsForm = document.getElementById('outingSettingsForm');
+if (outingSettingsForm) {
+    outingSettingsForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const formData = new FormData(outingSettingsForm);
+        const curfewValue = formData.get('curfew_time');
+
+        if (!curfewValue || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(curfewValue)) {
+            alert('Please enter a valid curfew time in HH:MM format.');
+            return;
+        }
+
+        try {
+            const response = await fetch('{% url "outing_time_settings" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: formData,
+                credentials: 'same-origin',
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Unable to save settings.');
+            }
+
+            const modalInstance = bootstrap.Modal.getInstance(outingSettingsModal);
+            if (modalInstance) modalInstance.hide();
+
+            alert(result.message || 'Outing time settings saved.');
+        } catch (error) {
+            alert(error.message || 'Something went wrong while saving settings.');
+        }
+    });
 }
 </script>
