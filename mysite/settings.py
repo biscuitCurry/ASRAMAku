@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-3j=r66)03!1o=(bzsu%k^p2()j3-3_$g5q&5)o^hmnswb3nzj4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "10.157.77.23", "127.0.0.1", "*"]
 
 
 # Application definition
@@ -170,3 +170,7 @@ PWA_APP_SERVICE_WORKER_PATH = "/static/app/js/serviceworker.js"
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 1800
+
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
