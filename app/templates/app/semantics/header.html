@@ -138,6 +138,37 @@ function getCookie(name) {
     return '';
 }
 
+function removeModalBackdrop() {
+    document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('padding-right');
+}
+
+function showOutingSettingsToast(message, isError = false) {
+    const toast = document.createElement('div');
+    toast.className = `alert ${isError ? 'alert-danger' : 'alert-success'} position-fixed top-0 end-0 m-3 shadow`;
+    toast.setAttribute('role', 'alert');
+    toast.style.zIndex = '1100';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+}
+
+function closeOutingSettingsModal(message) {
+    const modalInstance = bootstrap.Modal.getOrCreateInstance(outingSettingsModal);
+    let cleanedUp = false;
+    const finishClose = () => {
+        if (cleanedUp) return;
+        cleanedUp = true;
+        removeModalBackdrop();
+        showOutingSettingsToast(message);
+    };
+
+    outingSettingsModal.addEventListener('hidden.bs.modal', finishClose, { once: true });
+    modalInstance.hide();
+    setTimeout(finishClose, 500);
+}
+
 async function loadOutingSettings() {
     try {
         const response = await fetch('{% url "outing_time_settings" %}', {
@@ -201,12 +232,9 @@ if (outingSettingsForm) {
                 throw new Error(result.error || 'Unable to save settings.');
             }
 
-            const modalInstance = bootstrap.Modal.getInstance(outingSettingsModal);
-            if (modalInstance) modalInstance.hide();
-
-            alert(result.message || 'Outing time settings saved.');
+            closeOutingSettingsModal(result.message || 'Outing time settings saved.');
         } catch (error) {
-            alert(error.message || 'Something went wrong while saving settings.');
+            showOutingSettingsToast(error.message || 'Something went wrong while saving settings.', true);
         }
     });
 }

@@ -81,11 +81,10 @@ def get_checkin_limit_for_datetime(value):
 
 
 def is_late_checkin(check_in_time):
-    """Return True if the student checked in after the permitted time plus grace buffer."""
+    """Return True if the student checked in after the configured curfew."""
     settings = get_outing_time_settings()
     limit = normalize_time_value(settings.curfew_time)
-    grace = datetime.timedelta(minutes=settings.late_threshold_minutes)
-    return check_in_time.time() > (datetime.datetime.combine(datetime.date.today(), limit) + grace).time()
+    return check_in_time.time() > limit
 
 
 def normalize_identifier(value):
@@ -248,33 +247,19 @@ def outing_time_settings_view(request):
         return JsonResponse(
             {
                 "curfew_time": curfew_value.strftime("%H:%M"),
-                "max_outing_duration_hours": getattr(settings, "max_outing_duration_hours", 4),
-                "late_threshold_minutes": getattr(settings, "late_threshold_minutes", 15),
             }
         )
 
     if request.method == "POST":
         try:
             curfew_time = get_request_value(request, "curfew_time", "curfewTime")
-            max_hours = get_request_value(request, "max_outing_duration_hours", "maxOutingDurationHours")
-            late_threshold = get_request_value(request, "late_threshold_minutes", "lateThresholdMinutes")
 
             if not curfew_time:
                 raise ValueError("Curfew time is required.")
 
             datetime.datetime.strptime(str(curfew_time), "%H:%M")
 
-            max_hours_value = int(max_hours or 4)
-            late_threshold_value = int(late_threshold or 15)
-
-            if max_hours_value <= 0:
-                raise ValueError("Maximum outing duration must be greater than zero.")
-            if late_threshold_value < 0:
-                raise ValueError("Late threshold cannot be negative.")
-
             settings.curfew_time = normalize_time_value(str(curfew_time))
-            settings.max_outing_duration_hours = max_hours_value
-            settings.late_threshold_minutes = late_threshold_value
             settings.save()
 
             is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.content_type == "application/json"
@@ -376,6 +361,31 @@ def dashboard(request):
         datetime.datetime.combine(selected_date, datetime.time.max)
     )
 
+    present_count = Student.objects.filter(
+        presence_status="In"
+    ).exclude(status="Banned").count()
+
+    settings = get_outing_time_settings()
+    curfew_time = normalize_time_value(settings.curfew_time)
+    curfew_datetime = timezone.make_aware(
+        datetime.datetime.combine(today, curfew_time)
+    )
+    late_count = (
+        CheckLog.objects.filter(
+            student__presence_status="In",
+            check_in_time__gt=curfew_datetime,
+            check_in_time__lte=timezone.make_aware(
+                datetime.datetime.combine(today, datetime.time.max)
+            ),
+        )
+        .values("student_id")
+        .distinct()
+        .count()
+    )
+    approved_count = OutingRequest.objects.filter(
+        status="Approved", outing_date=today
+    ).count()
+
     # ⚡ OPTIMIZATION 1: Fetch check logs along with student data in 1 single query
     logs = CheckLog.objects.filter(
         Q(check_out_time__range=(start_datetime, end_datetime))
@@ -422,6 +432,9 @@ def dashboard(request):
         {
             "log_entries": log_entries,
             "selected_date_str": selected_date_str,
+            "present_count": present_count,
+            "late_count": late_count,
+            "approved_count": approved_count,
             # "prev_date_str": prev_date_str,
             # "next_date_str": next_date_str,
             # "today_str": today_str,
