@@ -93,7 +93,19 @@
               <tbody id="studentTable">
                 {% for item in log_entries %}
                 <tr class="{% if item.is_late %}table-danger{% else %}table-success{% endif %}">
-                  <td><strong>{{ item.student.name }}</strong></td>
+                  <td>
+                      <a href="#" class="student-name-link" data-bs-toggle="modal" data-bs-target="#studentInfoModal"
+                        data-photo="{% if item.student.profile_picture %}{{ item.student.profile_picture.url }}{% endif %}"
+                        data-name="{{ item.student.name }}"
+                        data-course="{{ item.student.course }}"
+                        data-session="{{ item.student.session }}"
+                        data-ic="{{ item.student.id_card }}"
+                        data-address="{{ item.student.address|default:'-' }}"
+                        data-phone="{{ item.student.phone_number|default:'-' }}"
+                        data-parent="{{ item.student.parent_contact|default:'-' }}">
+                          {{ item.student.name }}
+                      </a>
+                  </td>
                   <td>{{ item.student.student_id }}</td>
                   <td>{{ item.student.course }}</td>
                   <td>
@@ -302,6 +314,87 @@
       }, 1000); // 1000ms = 1 second delay before fading out
     });
   });
+
+document.addEventListener('DOMContentLoaded', function () {
+    const studentInfoModal = document.getElementById('studentInfoModal');
+    if (studentInfoModal) {
+        studentInfoModal.addEventListener('show.bs.modal', function (event) {
+            const trigger = event.relatedTarget;
+            if (!trigger) return;
+            document.getElementById('modalStudentName').textContent = trigger.getAttribute('data-name') || '-';
+            document.getElementById('modalStudentCourse').textContent = trigger.getAttribute('data-course') || '-';
+            document.getElementById('modalStudentSession').textContent = trigger.getAttribute('data-session') || '-';
+            document.getElementById('modalStudentIC').textContent = trigger.getAttribute('data-ic') || '-';
+            document.getElementById('modalStudentAddress').textContent = trigger.getAttribute('data-address') || '-';
+            document.getElementById('modalStudentPhone').textContent = trigger.getAttribute('data-phone') || '-';
+            document.getElementById('modalStudentParent').textContent = trigger.getAttribute('data-parent') || '-';
+
+            const photo = trigger.getAttribute('data-photo');
+            const img = document.getElementById('modalStudentPhoto');
+            const placeholder = document.getElementById('modalStudentNoPhoto');
+            if (photo) {
+                img.src = photo;
+                img.classList.remove('d-none');
+                placeholder.classList.add('d-none');
+            } else {
+                img.classList.add('d-none');
+                placeholder.classList.remove('d-none');
+            }
+        });
+    }
+});
+
 </script>
+
+<div class="modal fade" id="studentInfoModal" tabindex="-1" aria-labelledby="studentInfoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="studentInfoModalLabel"><i class="fas fa-id-card me-2"></i>Student Information</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="col-12 text-center mb-2">
+          <img id="modalStudentPhoto" src="" alt="" class="rounded-circle d-none" style="width:100px;height:100px;object-fit:cover;">
+          <i id="modalStudentNoPhoto" class="fas fa-user-circle" style="font-size:100px;color:#ccd6e0;"></i>
+      </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <small class="text-muted d-block">Name</small>
+            <p class="fw-semibold mb-0" id="modalStudentName">-</p>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted d-block">Course</small>
+            <p class="fw-semibold mb-0" id="modalStudentCourse">-</p>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted d-block">Session</small>
+            <p class="fw-semibold mb-0" id="modalStudentSession">-</p>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted d-block">IC Number</small>
+            <p class="fw-semibold mb-0" id="modalStudentIC">-</p>
+          </div>
+          <div class="col-12">
+            <small class="text-muted d-block">Address</small>
+            <p class="fw-semibold mb-0" id="modalStudentAddress">-</p>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted d-block">Phone Number</small>
+            <p class="fw-semibold mb-0" id="modalStudentPhone">-</p>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted d-block">Parent/Guardian Contact</small>
+            <p class="fw-semibold mb-0" id="modalStudentParent">-</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 {% endblock %}

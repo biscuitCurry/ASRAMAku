@@ -46,7 +46,14 @@
                             <tbody>
                                 {% for student in students %}
                                 <tr>
-                                    <td>{{ student.name|upper }}</td>
+                                    <td>
+                                        {% if student.profile_picture %}
+                                            <img src="{{ student.profile_picture.url }}" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
+                                        {% else %}
+                                            <i class="fas fa-user-circle fa-lg me-2 text-muted"></i>
+                                        {% endif %}
+                                        {{ student.name|upper }}
+                                    </td>
                                     <td>{{ student.student_id }}</td>
                                     <td>{{ student.course }}</td>
                                     <td>{{ student.session }}</td>

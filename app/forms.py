@@ -27,6 +27,7 @@ class StudentForm(forms.ModelForm):
             "phone_number",
             "tvetmara_email",
             "parent_contact",
+            "profile_picture",
         ]
         widgets = {
             "name": forms.TextInput(
@@ -78,6 +79,9 @@ class StudentForm(forms.ModelForm):
                     "class": "form-control",
                     "placeholder": "Parent/Guardian Contact",
                 }
+            ),
+            "profile_picture": forms.ClearableFileInput(
+                attrs={"class": "form-control"}
             ),
         }
 

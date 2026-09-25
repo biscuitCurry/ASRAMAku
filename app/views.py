@@ -67,23 +67,17 @@ def get_outing_time_settings():
         settings, _ = OutingTimeSettings.objects.get_or_create(pk=1)
         return settings
     except ProgrammingError:
-        class DefaultOutingTimeSettings:
-            curfew_time = datetime.time(22, 0)
-            max_outing_duration_hours = 4
-            late_threshold_minutes = 15
-
-        return DefaultOutingTimeSettings()
+        return OutingTimeSettings(pk=1)
 
 
 def get_checkin_limit_for_datetime(value):
     """Return the allowed check-in cutoff for the given day."""
-    return normalize_time_value(get_outing_time_settings().curfew_time)
+    return get_outing_time_settings().get_active_curfew_time(value)
 
 
 def is_late_checkin(check_in_time):
     """Return True if the student checked in after the configured curfew."""
-    settings = get_outing_time_settings()
-    limit = normalize_time_value(settings.curfew_time)
+    limit = get_checkin_limit_for_datetime(check_in_time)
     return check_in_time.time() > limit
 
 
@@ -243,7 +237,7 @@ def outing_time_settings_view(request):
     settings = get_outing_time_settings()
 
     if request.method == "GET":
-        curfew_value = normalize_time_value(getattr(settings, "curfew_time", datetime.time(22, 0)))
+        curfew_value = settings.get_active_curfew_time()
         return JsonResponse(
             {
                 "curfew_time": curfew_value.strftime("%H:%M"),
@@ -262,15 +256,23 @@ def outing_time_settings_view(request):
             settings.curfew_time = normalize_time_value(str(curfew_time))
             settings.save()
 
-            is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.content_type == "application/json"
+            is_ajax = (
+                request.headers.get("X-Requested-With") == "XMLHttpRequest"
+                or request.content_type == "application/json"
+            )
             if is_ajax:
-                return JsonResponse({"success": True, "message": "Outing settings saved."})
+                return JsonResponse(
+                    {"success": True, "message": "Outing settings saved."}
+                )
 
             messages.success(request, "Outing time settings saved successfully.")
             return redirect("dashboard")
         except (TypeError, ValueError):
             message = "Please enter valid values for the outing settings."
-            is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.content_type == "application/json"
+            is_ajax = (
+                request.headers.get("X-Requested-With") == "XMLHttpRequest"
+                or request.content_type == "application/json"
+            )
             if is_ajax:
                 return JsonResponse({"success": False, "error": message}, status=400)
             messages.error(request, message)
@@ -361,15 +363,13 @@ def dashboard(request):
         datetime.datetime.combine(selected_date, datetime.time.max)
     )
 
-    present_count = Student.objects.filter(
-        presence_status="In"
-    ).exclude(status="Banned").count()
+    present_count = (
+        Student.objects.filter(presence_status="In").exclude(status="Banned").count()
+    )
 
     settings = get_outing_time_settings()
-    curfew_time = normalize_time_value(settings.curfew_time)
-    curfew_datetime = timezone.make_aware(
-        datetime.datetime.combine(today, curfew_time)
-    )
+    curfew_time = settings.get_active_curfew_time(today)
+    curfew_datetime = timezone.make_aware(datetime.datetime.combine(today, curfew_time))
     late_count = (
         CheckLog.objects.filter(
             student__presence_status="In",
@@ -457,7 +457,7 @@ def is_staff(user):
 def add_student(request):
     """Add a new student"""
     if request.method == "POST":
-        form = StudentForm(request.POST)
+        form = StudentForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             messages.success(request, "Student added successfully.")
@@ -475,7 +475,7 @@ def edit_student(request, pk):
     student = get_object_or_404(Student, pk=pk)
 
     if request.method == "POST":
-        form = StudentForm(request.POST, instance=student)
+        form = StudentForm(request.POST, request.FILES, instance=student)
         if form.is_valid():
             form.save()
             messages.success(request, "Student updated successfully.")

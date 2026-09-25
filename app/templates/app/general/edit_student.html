@@ -19,9 +19,16 @@
                         {% endfor %}
                     {% endif %}
 
-                    <form method="POST">
+                    <form method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
-                        
+
+                        {% if student.profile_picture %}
+                        <div class="text-center mb-3">
+                            <img src="{{ student.profile_picture.url }}" alt="{{ student.name }}"
+                                class="rounded-circle" style="width:120px;height:120px;object-fit:cover;border:3px solid var(--brand-navy);">
+                        </div>
+                        {% endif %}
+
                         {% for field in form %}
                             <div class="mb-3">
                                 {{ field.label_tag }}

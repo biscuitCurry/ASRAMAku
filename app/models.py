@@ -2,12 +2,13 @@ import datetime
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
 
 # Create your models here.
 
 
 class OutingTimeSettings(models.Model):
-    curfew_time = models.TimeField(default=datetime.time(22, 0))
+    curfew_time = models.TimeField(null=True, blank=True, default=None)
     max_outing_duration_hours = models.PositiveIntegerField(default=4)
     late_threshold_minutes = models.PositiveIntegerField(default=15)
 
@@ -17,6 +18,15 @@ class OutingTimeSettings(models.Model):
 
     def __str__(self):
         return "Outing Time Settings"
+
+    def get_active_curfew_time(self, value=None):
+        """Return the manual curfew or the default for the requested day."""
+        if self.curfew_time is not None:
+            return self.curfew_time
+
+        current_value = value or timezone.now()
+        weekday = current_value.weekday()
+        return datetime.time(22, 0) if weekday in (3, 4, 5) else datetime.time(19, 0)
 
 
 class Student(models.Model):
@@ -33,6 +43,9 @@ class Student(models.Model):
     address = models.TextField("Address", blank=True, null=True)
     parent_contact = models.CharField(
         "Parent/Guardian Contact", max_length=20, blank=True, null=True
+    )
+    profile_picture = models.ImageField(
+    "Profile Picture", upload_to="student_photos/", blank=True, null=True
     )
 
     user = models.OneToOneField(

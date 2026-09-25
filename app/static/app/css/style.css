@@ -417,6 +417,21 @@ img {
     background: rgba(231, 76, 60, 0.05);
 }
 
+.student-name-link {
+    color: var(--text-main);
+    font-weight: 700;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.student-name-link:hover,
+.student-name-link:focus {
+    color: var(--brand-navy);
+    border-bottom-color: var(--brand-navy);
+}
+
 .status-pill {
     display: inline-flex;
     align-items: center;
