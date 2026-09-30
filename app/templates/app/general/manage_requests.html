@@ -52,7 +52,7 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th>
-                                        <input type="checkbox" id="selectAll" class="form-check-input">
+                                    <input type="checkbox" name="request_ids" value="{{ request.id }}" form="bulkForm" class="form-check-input request-checkbox">                                    
                                     </th>
                                     <th>Student Name</th>
                                     <th>Student ID</th>
@@ -96,12 +96,9 @@
                                                 <i class="fas fa-check"></i>
                                             </a>
                                             <!-- ⬇️ UPDATED REJECT TRIGGER BUTTON ⬇️ -->
-                                            <button type="button" class="btn btn-danger open-reject-modal" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#rejectModal" 
-                                                    data-request-id="{{ request.id }}"
-                                                    data-student-name="{{ request.student.name }}"
-                                                    data-reject-url="{% url 'reject_request' request.id %}"
+                                            <button type="button" class="btn btn-danger"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#rejectModal{{ request.id }}"
                                                     title="Reject">
                                                 <i class="fas fa-times"></i>
                                             </button>
@@ -144,6 +141,30 @@
                             </tbody>
                         </table>
                     </div>
+                    {% for request in requests %}
+                    <div class="modal fade" id="rejectModal{{ request.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <form method="POST" action="{% url 'reject_request' request.id %}">
+                                {% csrf_token %}
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title">Confirm Rejection</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Reject the outing request from <strong>{{ request.student.name }}</strong>?</p>
+                                        <label for="justification{{ request.id }}" class="form-label">Justification / Reason:</label>
+                                        <textarea class="form-control" id="justification{{ request.id }}" name="justification" rows="3" required placeholder="Provide a reason for rejecting this request..."></textarea>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-danger">Confirm Rejection</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
 
@@ -170,7 +191,7 @@ document.getElementById('bulkForm').addEventListener('submit', function(e) {
     }
 });
 
-document.addEventListener('DOMContentLoaded', function() {
+{% comment %} document.addEventListener('DOMContentLoaded', function() {
     const rejectModal = document.getElementById('rejectModal');
     if (rejectModal) {
         rejectModal.addEventListener('show.bs.modal', function(event) {
@@ -188,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
             form.action = rejectUrl; 
         });
     }
-});
+}); {% endcomment %}
 </script>
 
 {% endblock %}

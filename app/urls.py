@@ -11,6 +11,7 @@ urlpatterns = [
     path("logout/", views.log_out, name="logout"),
     # path("register/", views.register, name="register"),  # Public self-registration route
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("profile/", views.my_profile, name="my_profile"),
     # ==========================================
     # Student Management (Standardized Plurals)
     # ==========================================
@@ -34,4 +35,5 @@ urlpatterns = [
     path("api/dashboard-updates/", views.dashboard_updates, name="dashboard_updates"),
     path("api/dashboard-events/", views.dashboard_events, name="dashboard_events"),
     path("api/outing-time-settings/", views.outing_time_settings_view, name="outing_time_settings"),
+    path("api/pending-requests/", views.pending_requests_api, name="pending_requests_api"),
 ]

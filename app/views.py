@@ -6,6 +6,7 @@ from queue import Empty, SimpleQueue
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.mail import send_mail
 from django.db import ProgrammingError
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
@@ -13,11 +14,49 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from .forms import StudentForm
-from .models import CheckLog, OutingRequest, OutingTimeSettings, Student
+from .forms import StaffProfileForm, StudentForm
+from .models import CheckLog, OutingRequest, OutingTimeSettings, StaffProfile, Student
 
 DASHBOARD_EVENT_SUBSCRIBERS = []
 logger = logging.getLogger(__name__)
+
+
+def get_pending_request_count():
+    return OutingRequest.objects.filter(status="Pending").count()
+
+@require_http_methods(["GET"])
+def pending_requests_api(request):
+    if not (request.user.is_authenticated and request.user.is_staff):
+        return JsonResponse({"error": "Forbidden"}, status=403)
+
+    qs = OutingRequest.objects.filter(status="Pending").select_related("student").order_by("-request_time")
+    items = [
+        {
+            "id": r.id,
+            "name": r.student.name,
+            "destination": r.destination,
+            "time": timezone.localtime(r.request_time).strftime("%b %d, %H:%M"),
+        }
+        for r in qs[:3]
+    ]
+    return JsonResponse({"count": qs.count(), "items": items})
+
+@login_required
+def my_profile(request):
+    profile, _ = StaffProfile.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        form = StaffProfileForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated successfully.")
+            return redirect("my_profile")
+    else:
+        form = StaffProfileForm(instance=profile)
+
+    return render(
+        request, "app/general/profile.html", {"form": form, "profile": profile}
+    )
 
 
 def normalize_time_value(value):
@@ -75,10 +114,15 @@ def get_checkin_limit_for_datetime(value):
     return get_outing_time_settings().get_active_curfew_time(value)
 
 
-def is_late_checkin(check_in_time):
-    """Return True if the student checked in after the configured curfew."""
-    limit = get_checkin_limit_for_datetime(check_in_time)
-    return check_in_time.time() > limit
+def is_late_checkin(check_out_time, check_in_time):
+    """Compare the real deadline datetime, not just time-of-day."""
+    curfew = get_checkin_limit_for_datetime(check_out_time)
+    deadline = timezone.make_aware(
+        datetime.datetime.combine(timezone.localtime(check_out_time).date(), curfew)
+    )
+    if timezone.localtime(check_out_time).time() >= curfew:
+        deadline += datetime.timedelta(days=1)
+    return check_in_time > deadline
 
 
 def normalize_identifier(value):
@@ -121,15 +165,9 @@ def broadcast_dashboard_update():
 
 
 def record_check_in(student, check_in_time=None):
-    """Close the latest open exit record and mark it with the enter time."""
     if check_in_time is None:
         check_in_time = get_current_datetime()
 
-    student.presence_status = "In"
-    student.status = "None"
-    student.save()
-
-    late = is_late_checkin(check_in_time)
     log = (
         student.check_logs.filter(
             check_out_time__isnull=False, check_in_time__isnull=True
@@ -138,18 +176,48 @@ def record_check_in(student, check_in_time=None):
         .first()
     )
 
+    late = is_late_checkin(log.check_out_time, check_in_time) if log else False
+
+    student.presence_status = "In"
+    student.status = "None"
+    student.save()
+
     if log:
         log.check_in_time = check_in_time
         log.is_late = late
         log.save()
     else:
         log = CheckLog.objects.create(
-            student=student,
-            check_in_time=check_in_time,
-            is_late=late,
+            student=student, check_in_time=check_in_time, is_late=late
         )
 
     return log
+
+
+def notify_student_decision(req, justification=""):
+    """Email the student about the decision. Never breaks the approval flow."""
+    email = req.student.tvetmara_email
+    if not email:
+        return False
+
+    lines = [
+        f"Hi {req.student.name.title()},",
+        "",
+        f"Your outing request has been {req.status.upper()}.",
+        f"Destination: {req.reason}",
+        f"Purpose: {req.destination}",
+        f"Date: {req.outing_date}  Time: {req.outing_time}",
+    ]
+    if req.status == "Rejected" and justification:
+        lines += ["", f"Warden's reason: {justification}"]
+    lines += ["", "- ASRAMAku"]
+
+    try:
+        send_mail(f"Outing request {req.status}", "\n".join(lines), None, [email])
+        return True
+    except Exception:
+        logger.exception("Failed to send decision email to %s", email)
+        return False
 
 
 # -------------------------
@@ -540,6 +608,8 @@ def send_outing_request(request):
                 status="Pending",
             )
 
+            broadcast_dashboard_update()
+
             messages.success(request, "Outing request submitted successfully!")
             return redirect("send_outing_request")
 
@@ -571,6 +641,7 @@ def manage_outing_requests(request):
                 req.student.status = "Approved"
                 req.save()
                 req.student.save()
+                notify_student_decision(req)
             messages.success(request, f"{len(request_ids)} request(s) approved.")
 
         elif action == "reject":
@@ -579,13 +650,12 @@ def manage_outing_requests(request):
                 req.student.status = "Rejected"
                 req.save()
                 req.student.save()
+                notify_student_decision(req)
             messages.success(request, f"{len(request_ids)} request(s) rejected.")
 
         return redirect("manage_requests")
 
-    # Show only pending requests
     requests = OutingRequest.objects.filter(status="Pending").order_by("-request_time")
-
     return render(request, "app/general/manage_requests.html", {"requests": requests})
 
 
@@ -599,15 +669,19 @@ def approve_request(request, pk):
     req.save()
     req.student.save()
 
-    messages.success(request, f"Request from {req.student.name} approved.")
+    emailed = notify_student_decision(req)
+    messages.success(
+        request,
+        f"Request from {req.student.name} approved."
+        + ("" if emailed else " (No email sent.)"),
+    )
     return redirect("manage_requests")
 
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def reject_request(request, pk):
-    """Reject a single request with a mandatory text reasoning input justification"""
-    # 💡 FIX: Removed the accidental text tracker here:
+    """Reject a single request with a mandatory justification"""
     req = get_object_or_404(OutingRequest, id=pk)
 
     if request.method == "POST":
@@ -624,9 +698,11 @@ def reject_request(request, pk):
         req.save()
         req.student.save()
 
+        emailed = notify_student_decision(req, justification)
         messages.info(
             request,
-            f"Request from {req.student.name} rejected. Reason: {justification}",
+            f"Request from {req.student.name} rejected. Reason: {justification}"
+            + ("" if emailed else " (No email sent.)"),
         )
 
     return redirect("manage_requests")

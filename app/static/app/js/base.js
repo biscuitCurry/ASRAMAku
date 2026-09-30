@@ -7,6 +7,43 @@ function confirmLogout(event) {
 document.addEventListener('DOMContentLoaded', function() {
     const trigger = document.getElementById('userDropdown');
     const menu = document.getElementById('userDropdownMenu');
+    const notifTrigger = document.getElementById('notifBell');
+    const notifMenu = document.getElementById('notifDropdown');
+
+    if (notifTrigger && notifMenu) {
+        notifTrigger.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            notifMenu.style.display = (notifMenu.style.display === 'none' || notifMenu.style.display === '') ? 'block' : 'none';
+        });
+        document.addEventListener('click', function() {
+            notifMenu.style.display = 'none';
+        });
+
+        function refreshNotifications() {
+            fetch('/api/pending-requests/', { headers: { 'Accept': 'application/json' } })
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (!data) return;
+                    const badge = document.getElementById('notifBadge');
+                    badge.textContent = data.count;
+                    badge.style.display = data.count > 0 ? 'inline-block' : 'none';
+
+                    document.getElementById('notifList').innerHTML = data.items.length
+                        ? data.items.map(item => `
+                            <a href="/outing/manage/" class="dropdown-item small">
+                                <strong>${item.name}</strong> — ${item.destination}
+                                <div class="text-muted" style="font-size:0.75rem;">${item.time}</div>
+                            </a>`).join('')
+                        : '<div class="dropdown-item small text-muted">No pending requests</div>';
+                })
+                .catch(() => {});
+        }
+
+        const notifEvents = new EventSource('/api/dashboard-events/');
+        notifEvents.addEventListener('update', refreshNotifications);
+        notifEvents.onerror = () => console.warn('Notification stream disconnected.');
+    }
 
     if (trigger && menu) {
         // Toggle open/close on click

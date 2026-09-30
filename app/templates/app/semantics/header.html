@@ -42,6 +42,31 @@
                             </li>
                         {% endif %}
 
+                        {% if user.is_staff %}
+                        <li class="nav-item dropdown no-arrow position-relative" id="notifContainer">
+                            <a class="nav-link position-relative" href="#" id="notifBell" role="button" style="cursor:pointer;" title="Pending outing requests">
+                                <i class="fas fa-bell fa-lg"></i>
+                                <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle" id="notifBadge" style="font-size:0.65rem;{% if pending_request_count == 0 %}display:none;{% endif %}">
+                                    {{ pending_request_count }}
+                                </span>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end shadow" id="notifDropdown" style="display:none; position:absolute; right:0; top:100%; z-index:1050; min-width:280px;">
+                                <div class="px-3 py-2 fw-semibold border-bottom">Pending Outing Requests</div>
+                                <div id="notifList">
+                                    {% for r in pending_requests_preview %}
+                                    <a href="{% url 'manage_requests' %}" class="dropdown-item small">
+                                        <strong>{{ r.student.name }}</strong> — {{ r.destination }}
+                                        <div class="text-muted" style="font-size:0.75rem;">{{ r.request_time|date:"M d, H:i" }}</div>
+                                    </a>
+                                    {% empty %}
+                                    <div class="dropdown-item small text-muted">No pending requests</div>
+                                    {% endfor %}
+                                </div>
+                                <a href="{% url 'manage_requests' %}" class="dropdown-item text-center small text-primary border-top">View all</a>
+                            </div>
+                        </li>
+                        {% endif %}
+
                         <li class="nav-item dropdown no-arrow position-relative" id="userMenuContainer">
                             <a class="user-pill dropdown-toggle" href="#" id="userDropdown" role="button" style="cursor: pointer;">
                                 <span class="username d-none d-lg-inline">{{ user.username }}</span>
@@ -49,6 +74,10 @@
                             </a>
                             <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in" id="userDropdownMenu" style="display: none; position: absolute; right: 0; top: 100%; z-index: 1050; min-width: 210px;">
                                 {% if user.is_staff %}
+                                <a class="dropdown-item" href="{% url 'my_profile' %}">
+                                    <i class="fas fa-user fa-sm fa-fw me-2"></i>
+                                    Profile
+                                </a>
                                 <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#outingSettingsModal">
                                     <i class="fas fa-clock fa-sm fa-fw me-2"></i>
                                     Outing Time Settings
