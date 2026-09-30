@@ -1,12 +1,13 @@
 import datetime
 import json
 import logging
+import time
 from queue import Empty, SimpleQueue
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
 from django.db import ProgrammingError
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
@@ -16,6 +17,7 @@ from django.views.decorators.http import require_http_methods
 
 from .forms import StaffProfileForm, StudentForm
 from .models import CheckLog, OutingRequest, OutingTimeSettings, StaffProfile, Student
+from .pdf_utils import build_decision_letter_pdf
 
 DASHBOARD_EVENT_SUBSCRIBERS = []
 logger = logging.getLogger(__name__)
@@ -67,7 +69,9 @@ def normalize_time_value(value):
         return value
     if isinstance(value, str):
         try:
-            return datetime.datetime.strptime(value, "%H:%M").time()
+            return datetime.datetime.strptime(value, "%H:%M").time().replace(
+                tzinfo=datetime.timezone.utc
+            )
         except ValueError:
             try:
                 return datetime.datetime.fromisoformat(value).time()
@@ -176,8 +180,7 @@ def record_check_in(student, check_in_time=None):
         .first()
     )
 
-    late = is_late_checkin(log.check_out_time, check_in_time) if log else False
-
+    late = check_in_time > log.return_deadline() if log else False
     student.presence_status = "In"
     student.status = "None"
     student.save()
@@ -195,7 +198,7 @@ def record_check_in(student, check_in_time=None):
 
 
 def notify_student_decision(req, justification=""):
-    """Email the student about the decision. Never breaks the approval flow."""
+    """Email the student about the decision, with a PDF letter. Never breaks the approval flow."""
     email = req.student.tvetmara_email
     if not email:
         return False
@@ -204,16 +207,25 @@ def notify_student_decision(req, justification=""):
         f"Hi {req.student.name.title()},",
         "",
         f"Your outing request has been {req.status.upper()}.",
-        f"Destination: {req.reason}",
-        f"Purpose: {req.destination}",
+        f"Destination: {req.destination}",
+        f"Purpose: {req.reason}",
+        f"Type: {req.request_type}",
+        f"Return by: {req.return_date:%d %b %Y} (by curfew)" if req.return_date else "Return by: same day, by curfew",
         f"Date: {req.outing_date}  Time: {req.outing_time}",
     ]
     if req.status == "Rejected" and justification:
         lines += ["", f"Warden's reason: {justification}"]
-    lines += ["", "- ASRAMAku"]
+    lines += ["", "Your official letter is attached as a PDF.", "", "- ASRAMAku"]
 
     try:
-        send_mail(f"Outing request {req.status}", "\n".join(lines), None, [email])
+        msg = EmailMessage(f"Outing request {req.status}", "\n".join(lines), None, [email])
+        try:
+            now = timezone.localtime(timezone.now())
+            pdf = build_decision_letter_pdf(req, now, justification)
+            msg.attach(f"outing_{req.status.lower()}_{req.id}.pdf", pdf.getvalue(), "application/pdf")
+        except Exception:
+            logger.exception("Failed to build decision PDF for request %s", req.id)  # still send the email
+        msg.send()
         return True
     except Exception:
         logger.exception("Failed to send decision email to %s", email)
@@ -374,9 +386,24 @@ def dashboard(request):
                 student.presence_status = "Out"
                 student.save()
 
-                CheckLog.objects.create(
-                    student=student, check_out_time=get_current_datetime()
+                today = timezone.localdate()
+                approved = (
+                    OutingRequest.objects.filter(
+                        student=student,
+                        status="Approved",
+                        request_type="Home Leave",
+                        outing_date__lte=today,
+                        return_date__gte=today,
+                    )
+                    .order_by("-request_time")
+                    .first()
                 )
+                CheckLog.objects.create(
+                    student=student, check_out_time=get_current_datetime(), outing_request=approved
+                )
+                if approved:
+                    approved.status = "Used"
+                    approved.save(update_fields=["status"])
 
                 broadcast_dashboard_update()
                 messages.success(request, f"{student.name} checked out successfully.")
@@ -388,10 +415,10 @@ def dashboard(request):
                 broadcast_dashboard_update()
 
                 if log.is_late:
-                    limit = get_checkin_limit_for_datetime(check_in_time)
+                    deadline = timezone.localtime(log.return_deadline())
                     messages.warning(
                         request,
-                        f"Late check-in notice: {student.name} returned after the {limit.strftime('%I:%M %p')} limit.",
+                        f"Late check-in notice: {student.name} returned after the {deadline:%d %b, %I:%M %p} deadline.",
                     )
                 else:
                     messages.success(
@@ -585,37 +612,50 @@ def manage_students(request):
 # -------------------------
 
 
-@login_required
 def send_outing_request(request):
-    """Student submits outing request"""
+    """Student submits a home leave request (outings don't need a permit)"""
 
     if request.method == "POST":
         student_id = request.POST.get("student_id")
+        request_type = "Home Leave"  # outings don't need a permit
         destination = request.POST.get("destination")
         reason = request.POST.get("reason")
         outing_date = request.POST.get("outing_date")
         outing_time = request.POST.get("outing_time")
+        return_date = request.POST.get("return_date") or None
+
+        cfg, _ = OutingTimeSettings.objects.get_or_create(pk=1)
+        try:
+            start = datetime.date.fromisoformat(outing_date)
+            end = datetime.date.fromisoformat(return_date) if return_date else None
+        except (TypeError, ValueError):
+            start = end = None
+
+        if not start or not end or end <= start:
+            messages.error(request, "Home leave needs a return date after the leave date.")
+            return redirect("send_outing_request")
+        if (end - start).days > cfg.max_home_leave_days:
+            messages.error(request, f"Home leave cannot be longer than {cfg.max_home_leave_days} days.")
+            return redirect("send_outing_request")
 
         try:
             student = Student.objects.get(student_id=student_id)
-
             OutingRequest.objects.create(
                 student=student,
+                request_type=request_type,
                 destination=destination,
                 reason=reason,
                 outing_date=outing_date,
                 outing_time=outing_time,
+                return_date=return_date,
                 status="Pending",
             )
-
             broadcast_dashboard_update()
-
-            messages.success(request, "Outing request submitted successfully!")
-            return redirect("send_outing_request")
-
+            messages.success(request, "Home leave request submitted successfully!")
         except Student.DoesNotExist:
             messages.error(request, "Student not found.")
-            return redirect("send_outing_request")
+
+        return redirect("send_outing_request")
 
     return render(request, "app/general/outing_request.html")
 
@@ -770,20 +810,22 @@ def dashboard_updates(request):
     )
 
 
-@require_http_methods(["GET"])
 def dashboard_events(request):
     """Stream dashboard update events to the browser when records change."""
 
     def event_stream():
         subscriber = SimpleQueue()
         DASHBOARD_EVENT_SUBSCRIBERS.append(subscriber)
+        started = last_ping = time.monotonic()
         try:
-            while True:
+            yield "retry: 3000\n\n"  # browser reconnects 3s after the stream closes
+            while time.monotonic() - started < 120:  # recycle every 2 min
                 try:
-                    message = subscriber.get(timeout=1)
+                    yield subscriber.get(timeout=1)
                 except Empty:
-                    continue
-                yield message
+                    if time.monotonic() - last_ping >= 15:
+                        last_ping = time.monotonic()
+                        yield ": ping\n\n"  # heartbeat: lets the server notice closed tabs
         except GeneratorExit:
             pass
         finally:

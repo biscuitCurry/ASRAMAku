@@ -55,18 +55,23 @@
 
                             <div class="alert alert-info py-2 mb-3">
                                 Use the dashboard quick toggle for immediate go/in actions. The outing request page is optional for formal requests.<br>
-                                Daily return limits are 7:00 PM on Sunday to Thursday and 10:00 PM on Friday and Saturday. Late returns are flagged.
+                                Daily return limits are 7:00 PM Sunday to Wednesday, 10:00 PM Thursday to Saturday. Late returns are flagged.
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="requestType" class="form-label">Request Type:</label>
+                                <input type="hidden" name="request_type" value="Home Leave">
                             </div>
 
                             <!-- Destination -->
                             <div class="mb-3">
-                                <label for="destination" class="form-label">Purpose:</label>
+                                <label for="destination" class="form-label">Destination:</label>
                                 <input type="text" name="destination" id="destination" class="form-control" required>
                             </div>
 
                             <!-- Reason -->
                             <div class="mb-3">
-                                <label for="reason" class="form-label">Destination:</label>
+                                <label for="reason" class="form-label">Purpose:</label>
                                 <textarea name="reason" id="reason" class="form-control" rows="4" required></textarea>
                             </div>
 
@@ -82,6 +87,12 @@
                                     <label for="outingTime" class="form-label">Time:</label>
                                     <input type="time" name="outing_time" id="outingTime" class="form-control" required>
                                 </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="returnDate" class="form-label">Return Date:</label>
+                                <input type="date" name="return_date" id="returnDate" class="form-control" required>
+                                <div class="form-text">You must be back by that day's curfew.</div>
                             </div>
 
                             <!-- Buttons -->

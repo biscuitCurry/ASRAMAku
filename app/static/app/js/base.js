@@ -40,9 +40,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 .catch(() => {});
         }
 
-        const notifEvents = new EventSource('/api/dashboard-events/');
-        notifEvents.addEventListener('update', refreshNotifications);
-        notifEvents.onerror = () => console.warn('Notification stream disconnected.');
+        // The dashboard already has its own stream (and reloads on update), so don't open a second one there
+        setInterval(refreshNotifications, 30000);
     }
 
     if (trigger && menu) {

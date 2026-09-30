@@ -11,6 +11,7 @@ class OutingTimeSettings(models.Model):
     curfew_time = models.TimeField(null=True, blank=True, default=None)
     max_outing_duration_hours = models.PositiveIntegerField(default=4)
     late_threshold_minutes = models.PositiveIntegerField(default=15)
+    max_home_leave_days = models.PositiveIntegerField(default=30)
 
     class Meta:
         verbose_name = "Outing Time Settings"
@@ -94,6 +95,29 @@ class CheckLog(models.Model):
     check_in_time = models.DateTimeField(null=True, blank=True)
     is_late = models.BooleanField(default=False)
     warning_sent = models.BooleanField(default=False)
+    outing_request = models.ForeignKey(
+        "OutingRequest", on_delete=models.SET_NULL, null=True, blank=True, related_name="check_logs"
+    )
+
+    def return_deadline(self):
+        """When this student must be back: home leave -> return date's curfew, otherwise next curfew."""
+        if not self.check_out_time:
+            return None
+        cfg, _ = OutingTimeSettings.objects.get_or_create(pk=1)
+        req = self.outing_request
+        if req and req.request_type == "Home Leave" and req.return_date:
+            curfew = cfg.get_active_curfew_time(req.return_date)
+            return timezone.make_aware(datetime.datetime.combine(req.return_date, curfew))
+
+        out_time = timezone.localtime(self.check_out_time)
+        curfew = cfg.get_active_curfew_time(out_time)
+        deadline = timezone.make_aware(datetime.datetime.combine(out_time.date(), curfew))
+        if out_time.time() >= curfew:  # left after curfew: use the NEXT day's curfew
+            next_day = out_time.date() + datetime.timedelta(days=1)
+            deadline = timezone.make_aware(
+                datetime.datetime.combine(next_day, cfg.get_active_curfew_time(next_day))
+            )
+        return deadline
 
     def __str__(self):
         return f"{self.student.name} - Log"
@@ -117,6 +141,10 @@ class OutingRequest(models.Model):
     outing_time = models.TimeField(null=True, blank=True)
     request_time = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="Pending")
+
+    TYPE_CHOICES = (("Outing", "Outing"), ("Home Leave", "Home Leave"))
+    request_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default="Outing")
+    return_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.student.name} - {self.destination} ({self.status})"

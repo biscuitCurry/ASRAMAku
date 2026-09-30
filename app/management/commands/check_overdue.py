@@ -5,7 +5,7 @@ from django.core.mail import EmailMessage
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from app.models import CheckLog, OutingTimeSettings
+from app.models import CheckLog
 from app.pdf_utils import build_warning_letter_pdf
 
 
@@ -17,22 +17,18 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         now = timezone.localtime(timezone.now())
-        cfg, _ = OutingTimeSettings.objects.get_or_create(pk=1)
 
         open_logs = CheckLog.objects.filter(
             check_out_time__isnull=False,
             check_in_time__isnull=True,
             warning_sent=False,
             student__presence_status="Out",
-        ).select_related("student")
+        ).select_related("student", "outing_request")
 
         count = 0
         for log in open_logs:
             out_time = timezone.localtime(log.check_out_time)
-            curfew = cfg.get_active_curfew_time(out_time)
-            deadline = timezone.make_aware(datetime.datetime.combine(out_time.date(), curfew))
-            if out_time.time() >= curfew:
-                deadline += datetime.timedelta(days=1)
+            deadline = timezone.localtime(log.return_deadline())  # handles Outing and Home Leave
             if now <= deadline:
                 continue
 

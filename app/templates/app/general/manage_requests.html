@@ -52,12 +52,13 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th>
-                                    <input type="checkbox" name="request_ids" value="{{ request.id }}" form="bulkForm" class="form-check-input request-checkbox">                                    
+                                        <input type="checkbox" id="selectAll" class="form-check-input">
                                     </th>
                                     <th>Student Name</th>
                                     <th>Student ID</th>
-                                    <th>Purpose</th>
+                                    <th>Type</th>
                                     <th>Destination</th>
+                                    <th>Purpose</th>
                                     <th>Date</th>
                                     <th>Time</th>
                                     <th>Status</th>
@@ -68,11 +69,13 @@
                             <tbody>
                                 {% for request in requests %}
                                 <tr>
-                                    <td>
-                                        <input type="checkbox" name="request_ids" value="{{ request.id }}" class="form-check-input request-checkbox">
-                                    </td>
+                                    <td><input type="checkbox" name="request_ids" value="{{ request.id }}" form="bulkForm" class="form-check-input request-checkbox"></td>
                                     <td>{{ request.student.name }}</td>
                                     <td>{{ request.student.student_id }}</td>
+                                    <td>
+                                        {{ request.request_type }}
+                                        {% if request.return_date %}<br><small class="text-muted">Return {{ request.return_date|date:"M d" }}</small>{% endif %}
+                                    </td>
                                     <td>{{ request.destination }}</td>
                                     <td>{{ request.reason|truncatewords:10 }}</td>
                                     <td>{{ request.outing_date }}</td>
@@ -135,7 +138,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="10" class="text-center text-muted">No pending requests</td>
+                                    <td colspan="11" class="text-center text-muted">No pending requests</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
