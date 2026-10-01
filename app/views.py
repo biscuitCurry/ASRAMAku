@@ -818,14 +818,14 @@ def dashboard_events(request):
         DASHBOARD_EVENT_SUBSCRIBERS.append(subscriber)
         started = last_ping = time.monotonic()
         try:
-            yield "retry: 3000\n\n"  # browser reconnects 3s after the stream closes
+            yield "retry: 3000\n\n"
             while time.monotonic() - started < 120:  # recycle every 2 min
                 try:
                     yield subscriber.get(timeout=1)
                 except Empty:
                     if time.monotonic() - last_ping >= 15:
                         last_ping = time.monotonic()
-                        yield ": ping\n\n"  # heartbeat: lets the server notice closed tabs
+                        yield ": ping\n\n"  # lets the server notice closed tabs
         except GeneratorExit:
             pass
         finally:
