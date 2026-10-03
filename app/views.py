@@ -236,19 +236,24 @@ def notify_student_decision(req, justification=""):
 # AUTH VIEWS
 # -------------------------
 
-
 def index(request):
-    """Index/Login page - accessible to everyone"""
+    """Home page: staff go to the dashboard, everyone else gets the student permit page."""
+    if request.user.is_authenticated and request.user.is_staff:
+        return redirect("dashboard")
+    return permit_page(request, "index")
 
-    # If already logged in, redirect to dashboard
-    if request.user.is_authenticated:
-        if request.user.is_staff:
-            return redirect("dashboard")
-        else:
-            return redirect("send_outing_request")
+# def index(request):
+#     """Index/Login page - accessible to everyone"""
 
-    # Show login form if not authenticated
-    return render(request, "app/general/index.html")
+#     # If already logged in, redirect to dashboard
+#     if request.user.is_authenticated:
+#         if request.user.is_staff:
+#             return redirect("dashboard")
+#         else:
+#             return redirect("send_outing_request")
+
+#     # Show login form if not authenticated
+#     return render(request, "app/general/index.html")
 
 
 # def register(request):
@@ -307,7 +312,7 @@ def log_out(request):
         return HttpResponse(status=204)
 
     messages.success(request, "You have been logged out successfully.")
-    return redirect("index")
+    return redirect("login")
 
 
 @login_required
@@ -611,53 +616,141 @@ def manage_students(request):
 # OUTING REQUESTS (STUDENT ONLY)
 # -------------------------
 
+def verify_student_identity(student_id, id_card):
+    """Return the student only when the matric ID and IC number both match."""
+    matric = str(student_id or "").strip()
+    ic = normalize_identifier(id_card)
+    if not matric or not ic:
+        return None
+    student = Student.objects.filter(student_id__iexact=matric).first()
+    if student is None or normalize_identifier(student.id_card) != ic:
+        return None
+    return student
 
-def send_outing_request(request):
-    """Student submits a home leave request (outings don't need a permit)"""
+
+@require_http_methods(["POST"])
+def verify_student(request):
+    """Student portal step 1: check matric ID + IC, return profile and recent requests."""
+    student = verify_student_identity(request.POST.get("student_id"), request.POST.get("id_card"))
+    if student is None:
+        return JsonResponse({"error": "Matric ID and IC number do not match our records."}, status=404)
+
+    recent = student.outing_requests.order_by("-request_time")[:3]
+    return JsonResponse({
+        "name": student.name,
+        "course": student.course,
+        "session": student.session,
+        "requests": [
+            {
+                "destination": r.destination,
+                "dates": " to ".join(d.strftime("%d %b") for d in (r.outing_date, r.return_date) if d),
+                "status": r.status,
+            }
+            for r in recent
+        ],
+    })
+
+
+def permit_page(request, redirect_name):
+    """Student home leave permit form (outings don't need a permit)."""
 
     if request.method == "POST":
-        student_id = request.POST.get("student_id")
-        request_type = "Home Leave"  # outings don't need a permit
-        destination = request.POST.get("destination")
-        reason = request.POST.get("reason")
+        student = verify_student_identity(request.POST.get("student_id"), request.POST.get("id_card"))
+        if student is None:
+            messages.error(request, "Matric ID and IC number do not match our records.")
+            return redirect(redirect_name)
+
+        destination = (request.POST.get("destination") or "").strip()
+        reason = (request.POST.get("reason") or "").strip()
         outing_date = request.POST.get("outing_date")
         outing_time = request.POST.get("outing_time")
-        return_date = request.POST.get("return_date") or None
+        return_date = request.POST.get("return_date")
 
         cfg, _ = OutingTimeSettings.objects.get_or_create(pk=1)
         try:
             start = datetime.date.fromisoformat(outing_date)
-            end = datetime.date.fromisoformat(return_date) if return_date else None
+            end = datetime.date.fromisoformat(return_date)
+            datetime.time.fromisoformat(outing_time)
         except (TypeError, ValueError):
             start = end = None
 
-        if not start or not end or end <= start:
+        if not destination or not reason or not start or not end:
+            messages.error(request, "Please fill in every field of the home leave form.")
+            return redirect(redirect_name)
+        if end <= start:
             messages.error(request, "Home leave needs a return date after the leave date.")
-            return redirect("send_outing_request")
+            return redirect(redirect_name)
         if (end - start).days > cfg.max_home_leave_days:
             messages.error(request, f"Home leave cannot be longer than {cfg.max_home_leave_days} days.")
-            return redirect("send_outing_request")
+            return redirect(redirect_name)
 
-        try:
-            student = Student.objects.get(student_id=student_id)
-            OutingRequest.objects.create(
-                student=student,
-                request_type=request_type,
-                destination=destination,
-                reason=reason,
-                outing_date=outing_date,
-                outing_time=outing_time,
-                return_date=return_date,
-                status="Pending",
-            )
-            broadcast_dashboard_update()
-            messages.success(request, "Home leave request submitted successfully!")
-        except Student.DoesNotExist:
-            messages.error(request, "Student not found.")
+        OutingRequest.objects.create(
+            student=student,
+            request_type="Home Leave",
+            destination=destination,
+            reason=reason,
+            outing_date=outing_date,
+            outing_time=outing_time,
+            return_date=return_date,
+            status="Pending",
+        )
+        broadcast_dashboard_update()
+        messages.success(request, "Home leave request submitted. You'll get an email once the warden decides.")
+        return redirect(redirect_name)
 
-        return redirect("send_outing_request")
+    return render(request, "app/general/index.html")
 
-    return render(request, "app/general/outing_request.html")
+
+def send_outing_request(request):
+    """Same permit page at /outing/send/ (used by the staff 'Test Form' link)."""
+    return permit_page(request, "send_outing_request")
+
+# def send_outing_request(request):
+#     """Student submits a home leave request (outings don't need a permit)"""
+
+#     if request.method == "POST":
+#         student_id = request.POST.get("student_id")
+#         request_type = "Home Leave"  # outings don't need a permit
+#         destination = request.POST.get("destination")
+#         reason = request.POST.get("reason")
+#         outing_date = request.POST.get("outing_date")
+#         outing_time = request.POST.get("outing_time")
+#         return_date = request.POST.get("return_date") or None
+
+#         cfg, _ = OutingTimeSettings.objects.get_or_create(pk=1)
+#         try:
+#             start = datetime.date.fromisoformat(outing_date)
+#             end = datetime.date.fromisoformat(return_date) if return_date else None
+#         except (TypeError, ValueError):
+#             start = end = None
+
+#         if not start or not end or end <= start:
+#             messages.error(request, "Home leave needs a return date after the leave date.")
+#             return redirect("send_outing_request")
+#         if (end - start).days > cfg.max_home_leave_days:
+#             messages.error(request, f"Home leave cannot be longer than {cfg.max_home_leave_days} days.")
+#             return redirect("send_outing_request")
+
+#         try:
+#             student = Student.objects.get(student_id=student_id)
+#             OutingRequest.objects.create(
+#                 student=student,
+#                 request_type=request_type,
+#                 destination=destination,
+#                 reason=reason,
+#                 outing_date=outing_date,
+#                 outing_time=outing_time,
+#                 return_date=return_date,
+#                 status="Pending",
+#             )
+#             broadcast_dashboard_update()
+#             messages.success(request, "Home leave request submitted successfully!")
+#         except Student.DoesNotExist:
+#             messages.error(request, "Student not found.")
+
+#         return redirect("send_outing_request")
+
+#     return render(request, "app/general/outing_request.html")
 
 
 @login_required
@@ -756,6 +849,8 @@ def view_request(request, pk):
     return render(request, "app/general/view_request.html", {"request": req})
 
 
+@login_required
+@user_passes_test(lambda u: u.is_staff)
 @require_http_methods(["GET"])
 def get_student_by_id(request, student_id):
     """API endpoint to fetch student details"""

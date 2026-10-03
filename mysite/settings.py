@@ -30,6 +30,8 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "dashboard"
 
 
 # Application definition

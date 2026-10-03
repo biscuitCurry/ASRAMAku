@@ -30,6 +30,7 @@ urlpatterns = [
     # ==========================================
     # API Endpoints
     # ==========================================
+    path("api/student/verify/", views.verify_student, name="verify_student"),
     path("api/student/<str:student_id>/", views.get_student_by_id, name="get_student"),
     path("api/server-time/", views.server_time, name="server_time"),
     path("api/dashboard-updates/", views.dashboard_updates, name="dashboard_updates"),

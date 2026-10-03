@@ -1,47 +1,236 @@
 {% extends "app/base/base.html" %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container mt-4">
     <div class="row">
-        <div class="col-md-6 mx-auto">
+        <div class="col-lg-8 mx-auto">
+
+            <div class="hero-panel mb-4">
+                <span class="eyebrow"><i class="fas fa-house-user"></i> Student portal</span>
+                <h1>Home leave permit</h1>
+                <p class="mb-2">
+                    Apply here before going home. Short outings don't need a permit, just scan your card at the hostel entrance.
+                </p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
             <div class="card shadow-lg">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </h3>
+                <div class="card-header">
+                    <h5 class="mb-0" id="cardTitle">Step 1: Verify your identity</h5>
                 </div>
                 <div class="card-body">
-
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                <i class="fas fa-exclamation-circle"></i> {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-
-                    <form method="POST" action="{% url 'login' %}">
+                    <form method="POST" id="permitForm">
                         {% csrf_token %}
-                        
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username:</label>
-                            <input type="text" id="username" name="username" class="form-control" placeholder="Enter your username" required autofocus>
+
+                        <!-- Step 1: identity -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="matricId" class="form-label">Matric ID</label>
+                                <input type="text" id="matricId" name="student_id" class="form-control" placeholder="e.g. 333421254940" autocomplete="off" required autofocus>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="icNumber" class="form-label">IC Number</label>
+                                <input type="password" id="icNumber" name="id_card" class="form-control" placeholder="Without dashes" autocomplete="off" required>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password:</label>
-                            <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+                        <div id="verifyError" class="alert alert-danger py-2 d-none" role="alert"></div>
+
+                        <div id="verifyActions" class="d-flex gap-2">
+                            <button type="button" id="verifyBtn" class="btn btn-primary">
+                                <i class="fas fa-user-check me-1"></i> Verify
+                            </button>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100 mb-3">
-                            <i class="fas fa-sign-in-alt"></i> Login
-                        </button>
+                        <!-- Step 2: shown after verification -->
+                        <div id="permitFields" class="d-none">
+                            <div class="alert alert-success py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <span>
+                                    <i class="fas fa-circle-check me-1"></i>
+                                    <strong id="studentName"></strong>
+                                    <span class="text-muted" id="studentMeta"></span>
+                                </span>
+                                <button type="button" id="changeBtn" class="btn btn-sm btn-outline-secondary">Not you?</button>
+                            </div>
+
+                            <!-- Recent requests -->
+                            <div id="recentBlock" class="mb-4 d-none">
+                                <label class="form-label">Your recent requests</label>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <tbody id="recentRows"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="alert alert-info py-2 mb-3">
+                                You must be back by the curfew on your return date:
+                                7:00 PM Sunday to Wednesday, 10:00 PM Thursday to Saturday.
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="destination" class="form-label">Destination</label>
+                                <input type="text" name="destination" id="destination" class="form-control" placeholder="Where are you going?" maxlength="255">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="reason" class="form-label">Purpose</label>
+                                <textarea name="reason" id="reason" class="form-control" rows="3" placeholder="Reason for your home leave"></textarea>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label for="outingDate" class="form-label">Leave date</label>
+                                    <input type="date" name="outing_date" id="outingDate" class="form-control">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="outingTime" class="form-label">Leave time</label>
+                                    <input type="time" name="outing_time" id="outingTime" class="form-control">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="returnDate" class="form-label">Return date</label>
+                                    <input type="date" name="return_date" id="returnDate" class="form-control">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-paper-plane me-1"></i> Submit request
+                            </button>
+                        </div>
                     </form>
-
                 </div>
             </div>
+
+            {% if not user.is_authenticated %}
+            <p class="text-center text-muted mt-3 small">
+                Hostel staff? <a href="{% url 'login' %}">Log in here</a>.
+            </p>
+            {% endif %}
+
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('permitForm');
+    const matric = document.getElementById('matricId');
+    const ic = document.getElementById('icNumber');
+    const verifyBtn = document.getElementById('verifyBtn');
+    const verifyError = document.getElementById('verifyError');
+    const verifyActions = document.getElementById('verifyActions');
+    const fields = document.getElementById('permitFields');
+    const cardTitle = document.getElementById('cardTitle');
+    const outingDate = document.getElementById('outingDate');
+    const returnDate = document.getElementById('returnDate');
+    const stepTwoInputs = ['destination', 'reason', 'outingDate', 'outingTime', 'returnDate'].map(id => document.getElementById(id));
+    const pillClass = { Pending: 'warning', Approved: 'success', Rejected: 'danger', Used: 'neutral' };
+    let verified = false;
+
+    function isoDate(d) {
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function setVerified(data) {
+        verified = !!data;
+        matric.readOnly = verified;
+        ic.readOnly = verified;
+        fields.classList.toggle('d-none', !verified);
+        verifyActions.classList.toggle('d-none', verified);
+        stepTwoInputs.forEach(el => el.required = verified);
+        cardTitle.textContent = verified ? 'Step 2: Home leave details' : 'Step 1: Verify your identity';
+        if (!verified) return;
+
+        document.getElementById('studentName').textContent = data.name;
+        document.getElementById('studentMeta').textContent = ' · ' + data.course + ' · ' + data.session;
+
+        const rows = document.getElementById('recentRows');
+        rows.replaceChildren();
+        (data.requests || []).forEach(r => {
+            const tr = document.createElement('tr');
+            const where = document.createElement('td');
+            where.textContent = r.destination;
+            const when = document.createElement('td');
+            when.className = 'text-muted small';
+            when.textContent = r.dates;
+            const status = document.createElement('td');
+            status.className = 'text-end';
+            const pill = document.createElement('span');
+            pill.className = 'status-pill ' + (pillClass[r.status] || 'neutral');
+            pill.textContent = r.status;
+            status.appendChild(pill);
+            tr.append(where, when, status);
+            rows.appendChild(tr);
+        });
+        document.getElementById('recentBlock').classList.toggle('d-none', !(data.requests || []).length);
+        document.getElementById('destination').focus();
+    }
+
+    function verify() {
+        verifyError.classList.add('d-none');
+        if (!matric.value.trim() || !ic.value.trim()) {
+            verifyError.textContent = 'Enter both your matric ID and IC number.';
+            verifyError.classList.remove('d-none');
+            return;
+        }
+        verifyBtn.disabled = true;
+        const body = new FormData();
+        body.append('student_id', matric.value.trim());
+        body.append('id_card', ic.value.trim());
+        body.append('csrfmiddlewaretoken', form.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        fetch('{% url "verify_student" %}', { method: 'POST', body: body, headers: { 'Accept': 'application/json' } })
+            .then(r => r.json().then(data => ({ ok: r.ok, data: data })))
+            .then(res => {
+                if (!res.ok) throw new Error(res.data.error || 'Verification failed.');
+                setVerified(res.data);
+            })
+            .catch(err => {
+                verifyError.textContent = err.message || 'Could not reach the server. Try again.';
+                verifyError.classList.remove('d-none');
+            })
+            .finally(() => { verifyBtn.disabled = false; });
+    }
+
+    verifyBtn.addEventListener('click', verify);
+    [matric, ic].forEach(el => el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !verified) { e.preventDefault(); verify(); }
+    }));
+
+    document.getElementById('changeBtn').addEventListener('click', () => {
+        setVerified(null);
+        ic.value = '';
+        matric.focus();
+    });
+
+    // Never submit the permit before the identity check has passed
+    form.addEventListener('submit', e => {
+        if (!verified) { e.preventDefault(); verify(); }
+    });
+
+    // Leave date can't be in the past; return date must be after the leave date
+    const today = new Date();
+    outingDate.min = isoDate(today);
+    function syncReturnMin() {
+        const base = outingDate.value ? new Date(outingDate.value + 'T00:00:00') : today;
+        base.setDate(base.getDate() + 1);
+        returnDate.min = isoDate(base);
+        if (returnDate.value && returnDate.value < returnDate.min) returnDate.value = '';
+    }
+    outingDate.addEventListener('change', syncReturnMin);
+    syncReturnMin();
+});
+</script>
 {% endblock %}
