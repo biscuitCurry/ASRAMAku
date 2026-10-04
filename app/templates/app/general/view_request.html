@@ -44,7 +44,7 @@
                     <hr>
 
                     <div class="d-flex gap-2">
-                        <a href="{% url 'approve_request' request.id %}" class="btn btn-success">Approve</a>
+                        <a href="{% url 'approve_request' request.id %}" class="btn btn-success once">Approve</a>
                         <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModalDetail">Reject</button>
                         <a href="{% url 'manage_requests' %}" class="btn btn-secondary">Back</a>
                     </div>

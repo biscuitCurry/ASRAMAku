@@ -83,6 +83,7 @@
               <thead>
                 <tr>
                   <th>Name</th>
+                  <th>Activity</th>
                   <th>Student ID</th>
                   <th>Course</th>
                   <th>Status</th>
@@ -105,6 +106,13 @@
                         data-parent="{{ item.student.parent_contact|default:'-' }}">
                           {{ item.student.name }}
                       </a>
+                  </td>
+                  <td>
+                    {% if item.log.outing_request and item.log.outing_request.request_type == "Home Leave" %}
+                      <span class="status-pill info" title="Return by {{ item.log.outing_request.return_date|date:'d M Y' }}">Home Leave</span>
+                    {% else %}
+                      <span class="status-pill neutral">Outing</span>
+                    {% endif %}
                   </td>
                   <td>{{ item.student.student_id }}</td>
                   <td>{{ item.student.course }}</td>

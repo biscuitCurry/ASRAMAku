@@ -490,7 +490,7 @@ def dashboard(request):
     logs = CheckLog.objects.filter(
         Q(check_out_time__range=(start_datetime, end_datetime))
         | Q(check_in_time__range=(start_datetime, end_datetime))
-    ).select_related("student")
+    ).select_related("student", "outing_request")
 
     # ⚡ OPTIMIZATION 2: Get all active approved outings in ONE query instead of inside a loop
     student_ids = [log.student_id for log in logs]
@@ -753,6 +753,23 @@ def send_outing_request(request):
 #     return render(request, "app/general/outing_request.html")
 
 
+def decide_request(pk, new_status, justification=""):
+    """Approve or reject a request exactly once.
+
+    The filter + update runs as a single database statement, so when several clicks
+    arrive together only the first one finds the request still Pending. The rest get None.
+    """
+    claimed = OutingRequest.objects.filter(pk=pk, status="Pending").update(status=new_status)
+    if not claimed:
+        return None
+
+    req = OutingRequest.objects.select_related("student").get(pk=pk)
+    req.student.status = new_status
+    req.student.save(update_fields=["status"])
+    req.emailed = notify_student_decision(req, justification)
+    return req
+
+
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def manage_outing_requests(request):
@@ -761,31 +778,23 @@ def manage_outing_requests(request):
     if request.method == "POST":
         action = request.POST.get("action")
         request_ids = request.POST.getlist("request_ids")
+        justification = request.POST.get("justification", "").strip()
 
         if not request_ids:
             messages.error(request, "Please select at least one request.")
             return redirect("manage_requests")
+        if action not in ("approve", "reject"):
+            return redirect("manage_requests")
 
-        requests_to_update = OutingRequest.objects.filter(id__in=request_ids)
+        new_status = "Approved" if action == "approve" else "Rejected"
+        done = sum(1 for pk in request_ids if decide_request(pk, new_status, justification))
+        skipped = len(request_ids) - done
 
-        if action == "approve":
-            for req in requests_to_update:
-                req.status = "Approved"
-                req.student.status = "Approved"
-                req.save()
-                req.student.save()
-                notify_student_decision(req)
-            messages.success(request, f"{len(request_ids)} request(s) approved.")
-
-        elif action == "reject":
-            for req in requests_to_update:
-                req.status = "Rejected"
-                req.student.status = "Rejected"
-                req.save()
-                req.student.save()
-                notify_student_decision(req)
-            messages.success(request, f"{len(request_ids)} request(s) rejected.")
-
+        messages.success(
+            request,
+            f"{done} request(s) {new_status.lower()}."
+            + (f" {skipped} already decided, skipped." if skipped else ""),
+        )
         return redirect("manage_requests")
 
     requests = OutingRequest.objects.filter(status="Pending").order_by("-request_time")
@@ -796,18 +805,17 @@ def manage_outing_requests(request):
 @user_passes_test(lambda u: u.is_staff)
 def approve_request(request, pk):
     """Approve a single request"""
-    req = get_object_or_404(OutingRequest, id=pk)
-    req.status = "Approved"
-    req.student.status = "Approved"
-    req.save()
-    req.student.save()
+    get_object_or_404(OutingRequest, id=pk)
+    req = decide_request(pk, "Approved")
 
-    emailed = notify_student_decision(req)
-    messages.success(
-        request,
-        f"Request from {req.student.name} approved."
-        + ("" if emailed else " (No email sent.)"),
-    )
+    if req is None:
+        messages.info(request, "That request was already decided. No email was sent again.")
+    else:
+        messages.success(
+            request,
+            f"Request from {req.student.name} approved."
+            + ("" if req.emailed else " (No email sent.)"),
+        )
     return redirect("manage_requests")
 
 
@@ -815,7 +823,7 @@ def approve_request(request, pk):
 @user_passes_test(lambda u: u.is_staff)
 def reject_request(request, pk):
     """Reject a single request with a mandatory justification"""
-    req = get_object_or_404(OutingRequest, id=pk)
+    get_object_or_404(OutingRequest, id=pk)
 
     if request.method == "POST":
         justification = request.POST.get("justification", "").strip()
@@ -826,17 +834,15 @@ def reject_request(request, pk):
             )
             return redirect("manage_requests")
 
-        req.status = "Rejected"
-        req.student.status = "Rejected"
-        req.save()
-        req.student.save()
-
-        emailed = notify_student_decision(req, justification)
-        messages.info(
-            request,
-            f"Request from {req.student.name} rejected. Reason: {justification}"
-            + ("" if emailed else " (No email sent.)"),
-        )
+        req = decide_request(pk, "Rejected", justification)
+        if req is None:
+            messages.info(request, "That request was already decided. No email was sent again.")
+        else:
+            messages.info(
+                request,
+                f"Request from {req.student.name} rejected. Reason: {justification}"
+                + ("" if req.emailed else " (No email sent.)"),
+            )
 
     return redirect("manage_requests")
 

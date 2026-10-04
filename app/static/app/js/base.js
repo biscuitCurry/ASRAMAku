@@ -58,3 +58,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Stop double submits: lock a form after its first submit, and make "once" links single-use
+document.addEventListener('submit', function (e) {
+    if (e.defaultPrevented) return;
+    const form = e.target;
+    if (form.dataset.submitting) { e.preventDefault(); return; }
+    form.dataset.submitting = '1';
+    setTimeout(function () {
+        document.querySelectorAll('button[type=submit]').forEach(function (b) {
+            if (b.form === form) b.disabled = true;
+        });
+    }, 0);
+});
+
+document.addEventListener('click', function (e) {
+    const link = e.target.closest('a.once');
+    if (!link) return;
+    if (link.dataset.clicked) { e.preventDefault(); return; }
+    link.dataset.clicked = '1';
+    link.classList.add('disabled');
+});
+
+// If the user comes back with the Back button, unlock everything again
+window.addEventListener('pageshow', function () {
+    document.querySelectorAll('form[data-submitting]').forEach(function (f) { delete f.dataset.submitting; });
+    document.querySelectorAll('button[type=submit]:disabled').forEach(function (b) { b.disabled = false; });
+    document.querySelectorAll('a.once').forEach(function (a) { delete a.dataset.clicked; a.classList.remove('disabled'); });
+});
