@@ -69,9 +69,7 @@ def normalize_time_value(value):
         return value
     if isinstance(value, str):
         try:
-            return datetime.datetime.strptime(value, "%H:%M").time().replace(
-                tzinfo=datetime.timezone.utc
-            )
+            return datetime.datetime.strptime(value, "%H:%M").time()
         except ValueError:
             try:
                 return datetime.datetime.fromisoformat(value).time()
@@ -616,16 +614,12 @@ def manage_students(request):
 # OUTING REQUESTS (STUDENT ONLY)
 # -------------------------
 
-def verify_student_identity(student_id, id_card):
-    """Return the student only when the matric ID and IC number both match."""
+def verify_student_identity(student_id, id_card=None):
+    """Look a student up by matric ID only (IC check removed)."""
     matric = str(student_id or "").strip()
-    ic = normalize_identifier(id_card)
-    if not matric or not ic:
+    if not matric:
         return None
-    student = Student.objects.filter(student_id__iexact=matric).first()
-    if student is None or normalize_identifier(student.id_card) != ic:
-        return None
-    return student
+    return Student.objects.filter(student_id__iexact=matric).first()
 
 
 @require_http_methods(["POST"])
@@ -633,7 +627,7 @@ def verify_student(request):
     """Student portal step 1: check matric ID + IC, return profile and recent requests."""
     student = verify_student_identity(request.POST.get("student_id"), request.POST.get("id_card"))
     if student is None:
-        return JsonResponse({"error": "Matric ID and IC number do not match our records."}, status=404)
+        return JsonResponse({"error": "Matric ID not found. Please check and try again."}, status=404)
 
     recent = student.outing_requests.order_by("-request_time")[:3]
     return JsonResponse({

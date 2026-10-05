@@ -31,22 +31,16 @@
                         {% csrf_token %}
 
                         <!-- Step 1: identity -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label for="matricId" class="form-label">Matric ID</label>
-                                <input type="text" id="matricId" name="student_id" class="form-control" placeholder="e.g. 333421254940" autocomplete="off" required autofocus>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="icNumber" class="form-label">IC Number</label>
-                                <input type="password" id="icNumber" name="id_card" class="form-control" placeholder="Without dashes" autocomplete="off" required>
-                            </div>
+                        <div class="mb-3">
+                            <label for="matricId" class="form-label">Matric ID</label>
+                            <input type="text" id="matricId" name="student_id" class="form-control" placeholder="e.g. 333421254940" autocomplete="off" required autofocus>
                         </div>
 
                         <div id="verifyError" class="alert alert-danger py-2 d-none" role="alert"></div>
 
                         <div id="verifyActions" class="d-flex gap-2">
                             <button type="button" id="verifyBtn" class="btn btn-primary">
-                                <i class="fas fa-user-check me-1"></i> Verify
+                                <i class="fas fa-user-check me-1"></i> Continue
                             </button>
                         </div>
 
@@ -74,8 +68,8 @@
                             <hr>
 
                             <div class="alert alert-info py-2 mb-3">
-                                You must be back by the curfew on your return date:
-                                7:00 PM Sunday to Wednesday, 10:00 PM Thursday to Saturday.
+                                Anda mesti kembali sebelum had waktu yang telah ditetapkan iaitu sehingga
+7:00 malam pada hari Ahad hingga Rabu, 10:00 malam pada hari Khamis hingga Sabtu.
                             </div>
 
                             <div class="mb-3">
@@ -94,8 +88,16 @@
                                     <input type="date" name="outing_date" id="outingDate" class="form-control">
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="outingTime" class="form-label">Leave time</label>
-                                    <input type="time" name="outing_time" id="outingTime" class="form-control">
+                                    <label for="timeHour" class="form-label">Leave time</label>
+                                    <div class="d-flex gap-1">
+                                        <select id="timeHour" class="form-select px-2" aria-label="Hour"></select>
+                                        <select id="timeMinute" class="form-select px-2" aria-label="Minute"></select>
+                                        <select id="timePeriod" class="form-select px-2" aria-label="AM or PM">
+                                            <option>AM</option>
+                                            <option>PM</option>
+                                        </select>
+                                    </div>
+                                    <input type="hidden" name="outing_time" id="outingTime">
                                 </div>
                                 <div class="col-md-4">
                                     <label for="returnDate" class="form-label">Return date</label>
@@ -127,7 +129,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('permitForm');
     const matric = document.getElementById('matricId');
-    const ic = document.getElementById('icNumber');
     const verifyBtn = document.getElementById('verifyBtn');
     const verifyError = document.getElementById('verifyError');
     const verifyActions = document.getElementById('verifyActions');
@@ -146,7 +147,6 @@ document.addEventListener('DOMContentLoaded', function () {
     function setVerified(data) {
         verified = !!data;
         matric.readOnly = verified;
-        ic.readOnly = verified;
         fields.classList.toggle('d-none', !verified);
         verifyActions.classList.toggle('d-none', verified);
         stepTwoInputs.forEach(el => el.required = verified);
@@ -180,15 +180,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function verify() {
         verifyError.classList.add('d-none');
-        if (!matric.value.trim() || !ic.value.trim()) {
-            verifyError.textContent = 'Enter both your matric ID and IC number.';
+        if (!matric.value.trim()) {
+            verifyError.textContent = 'Enter your matric ID.';
             verifyError.classList.remove('d-none');
             return;
         }
         verifyBtn.disabled = true;
         const body = new FormData();
         body.append('student_id', matric.value.trim());
-        body.append('id_card', ic.value.trim());
         body.append('csrfmiddlewaretoken', form.querySelector('[name=csrfmiddlewaretoken]').value);
 
         fetch('{% url "verify_student" %}', { method: 'POST', body: body, headers: { 'Accept': 'application/json' } })
@@ -205,19 +204,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     verifyBtn.addEventListener('click', verify);
-    [matric, ic].forEach(el => el.addEventListener('keydown', e => {
+    matric.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !verified) { e.preventDefault(); verify(); }
-    }));
+    });
 
     document.getElementById('changeBtn').addEventListener('click', () => {
         setVerified(null);
-        ic.value = '';
         matric.focus();
     });
 
     // Never submit the permit before the identity check has passed
     form.addEventListener('submit', e => {
-        if (!verified) { e.preventDefault(); verify(); }
+        if (!verified) { e.preventDefault(); verify(); return; }
+        const leave = new Date(outingDate.value + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+        const back = new Date(returnDate.value + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+        const time = hourSel.value + ':' + minSel.selectedOptions[0].text + ' ' + periodSel.value;
+        if (!confirm('Submit home leave request?\n\nLeave: ' + leave + ', ' + time + '\nReturn: ' + back)) {
+            e.preventDefault();
+        }
     });
 
     // Leave date can't be in the past; return date must be after the leave date
@@ -230,6 +234,32 @@ document.addEventListener('DOMContentLoaded', function () {
         if (returnDate.value && returnDate.value < returnDate.min) returnDate.value = '';
     }
     outingDate.addEventListener('change', syncReturnMin);
+    syncReturnMin();
+
+        // 12-hour leave time picker (saved as 24h in the hidden outing_time field)
+    const hourSel = document.getElementById('timeHour');
+    const minSel = document.getElementById('timeMinute');
+    const periodSel = document.getElementById('timePeriod');
+    const outingTime = document.getElementById('outingTime');
+    for (let h = 1; h <= 12; h++) hourSel.add(new Option(h, h));
+    for (let m = 0; m < 60; m += 5) minSel.add(new Option(String(m).padStart(2, '0'), m));
+
+    function syncTime() {
+        let h = Number(hourSel.value) % 12;
+        if (periodSel.value === 'PM') h += 12;
+        outingTime.value = String(h).padStart(2, '0') + ':' + String(minSel.value).padStart(2, '0');
+    }
+    [hourSel, minSel, periodSel].forEach(el => el.addEventListener('change', syncTime));
+
+    // Autofill: leave now (rounded up to the next 5 minutes), return the day after
+    const start = new Date();
+    start.setSeconds(0, 0);
+    start.setMinutes(Math.ceil(start.getMinutes() / 5) * 5);
+    outingDate.value = isoDate(start);
+    hourSel.value = start.getHours() % 12 || 12;
+    minSel.value = start.getMinutes();
+    periodSel.value = start.getHours() >= 12 ? 'PM' : 'AM';
+    syncTime();
     syncReturnMin();
 });
 </script>
