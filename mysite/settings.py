@@ -148,33 +148,30 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 PWA_APP_NAME = "ASRAMAku"
 PWA_APP_DESCRIPTION = "ASRAMAku - Hostel Management System"
-PWA_APP_THEME_COLOR = "#0A0A0A"
-PWA_APP_BACKGROUND_COLOR = "#FFFFFF"
+PWA_APP_THEME_COLOR = "#0d2f5d"
+PWA_APP_BACKGROUND_COLOR = "#ffffff"
 PWA_APP_DISPLAY = "standalone"
 PWA_APP_SCOPE = "/"
 PWA_APP_ORIENTATION = "any"
 PWA_APP_START_URL = "/"
 PWA_APP_STATUS_BAR_COLOR = "default"
+# The last icon in this list is also used as the browser tab icon.
 PWA_APP_ICONS = [
-    {
-        "src": "/static/app/img/asramaku_logo.png",
-        "sizes": "512x512",
-    }
+    {"src": "/static/app/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/static/app/img/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    {"src": "/static/app/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
 ]
-
-PWA_APP_SPLASH_SCREEN = [
-    {
-        "src": "/static/app/img/asramaku_logo.png",
-        "media": "(device-width: 320px) and (device-height: 568px)"
-        and "(-webkit-device-pixel-ratio: 2)",
-    }
+PWA_APP_ICONS_APPLE = [
+    {"src": "/static/app/img/icons/apple-touch-icon.png", "sizes": "180x180"},
 ]
+# The full-logo opening screen is handled in base.html, so no per-device splash images are needed.
+PWA_APP_SPLASH_SCREEN = []
 PWA_APP_DIR = "ltr"
-PWA_APP_LANG = "en-US", "ms-MY"
+PWA_APP_LANG = "en-MY"
 
-PWA_APP_DEBUG_MODE = True
+PWA_APP_DEBUG_MODE = False
 
-PWA_APP_SERVICE_WORKER_PATH = "/static/app/js/serviceworker.js"
+PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, "serviceworker.js")
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 1800

@@ -4,7 +4,18 @@
 {% load pwa %}
     <head>
     {% progressive_web_app_meta %}
-    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <script>
+        // Show the full-logo opening screen once, only when launched as an installed app
+        (function () {
+            try {
+                var installed = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                if (installed && !sessionStorage.getItem('asramakuSplashShown')) {
+                    sessionStorage.setItem('asramakuSplashShown', '1');
+                    document.documentElement.classList.add('pwa-launch');
+                }
+            } catch (e) {}
+        })();
+    </script>
 
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -23,6 +34,9 @@
         <title>ASRAMAku</title>
     </head>
     <body>
+        <div class="app-splash" aria-hidden="true">
+            <img src="{% static 'app/img/asramaku_logo_wide.png' %}" alt="">
+        </div>
         <!-- Header Include -->
         {% include "app/semantics/header.html" %}
 

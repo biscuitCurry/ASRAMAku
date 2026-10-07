@@ -1,0 +1,52 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0d2f5d">
+    <title>Offline | ASRAMAku</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            display: flex; align-items: center; justify-content: center; padding: 24px;
+            background: linear-gradient(180deg, #f6f8fc 0%, #edf2f9 100%);
+            color: #1f2a37; font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        .card {
+            width: min(100%, 440px); padding: 32px 28px; text-align: center;
+            background: #fff; border: 1px solid #e7edf5; border-radius: 26px;
+            box-shadow: 0 28px 60px rgba(15, 38, 70, 0.10);
+        }
+        .card img { width: min(78%, 280px); height: auto; margin-bottom: 20px; }
+        h1 { margin: 0 0 8px; font-size: 1.45rem; font-weight: 800; letter-spacing: -0.03em; color: #0d2f5d; }
+        p { margin: 0 0 22px; color: #5f6c7b; line-height: 1.6; }
+        button {
+            border: 0; border-radius: 14px; padding: 13px 26px; cursor: pointer;
+            background: linear-gradient(135deg, #0d2f5d, #113d72); color: #fff;
+            font: inherit; font-weight: 700; box-shadow: 0 14px 25px rgba(13, 47, 93, 0.24);
+        }
+        .status { margin: 16px 0 0; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <img src="{% static 'app/img/asramaku_logo_wide.png' %}" alt="ASRAMAku">
+        <h1>You're offline</h1>
+        <p>ASRAMAku needs an internet connection to load student records and requests. Check your Wi-Fi or mobile data, then try again.</p>
+        <button type="button" id="retryBtn">Try again</button>
+        <p class="status" id="status" role="status"></p>
+    </main>
+
+    <script>
+        var statusEl = document.getElementById('status');
+        function retry() {
+            statusEl.textContent = 'Checking connection...';
+            window.location.reload();
+        }
+        document.getElementById('retryBtn').addEventListener('click', retry);
+        // Reload on its own as soon as the connection comes back
+        window.addEventListener('online', retry);
+    </script>
+</body>
+</html>

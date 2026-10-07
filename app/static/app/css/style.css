@@ -565,3 +565,27 @@ img {
     background: linear-gradient(135deg, #17a2b8 0%, #00bcd4 100%);
 }
 
+/* ===== Installed-app opening screen (full logo) ===== */
+.app-splash { display: none; }
+
+html.pwa-launch .app-splash {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    pointer-events: none;
+    animation: app-splash-out 0.45s ease 1.1s forwards;
+}
+
+.app-splash img { width: min(72vw, 420px); height: auto; }
+
+@keyframes app-splash-out {
+    to { opacity: 0; visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.pwa-launch .app-splash { animation-duration: 0.01s; }
+}
