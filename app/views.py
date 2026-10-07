@@ -671,7 +671,7 @@ def permit_page(request, redirect_name):
         if not destination or not reason or not start or not end:
             messages.error(request, "Please fill in every field of the home leave form.")
             return redirect(redirect_name)
-        if end <= start:
+        if end < start:
             messages.error(request, "Home leave needs a return date after the leave date.")
             return redirect(redirect_name)
         if (end - start).days > cfg.max_home_leave_days:

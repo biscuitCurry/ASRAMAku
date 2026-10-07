@@ -68,8 +68,7 @@
                             <hr>
 
                             <div class="alert alert-info py-2 mb-3">
-                                Anda mesti kembali sebelum had waktu yang telah ditetapkan iaitu sehingga
-7:00 malam pada hari Ahad hingga Rabu, 10:00 malam pada hari Khamis hingga Sabtu.
+                                Anda mesti kembali ke asrama pada tarikh pulang yang dinyatakan dalam permohonan ini.
                             </div>
 
                             <div class="mb-3">
@@ -229,7 +228,6 @@ document.addEventListener('DOMContentLoaded', function () {
     outingDate.min = isoDate(today);
     function syncReturnMin() {
         const base = outingDate.value ? new Date(outingDate.value + 'T00:00:00') : today;
-        base.setDate(base.getDate() + 1);
         returnDate.min = isoDate(base);
         if (returnDate.value && returnDate.value < returnDate.min) returnDate.value = '';
     }

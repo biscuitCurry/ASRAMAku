@@ -53,3 +53,21 @@
     </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const rfidInput = document.getElementById('rfid-input');
+    if (!rfidInput) return;
+
+    // The RFID reader sends Enter after the card number. Stop that from saving the form.
+    rfidInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const nextInput = document.getElementsByName('address')[0];
+            if (nextInput) nextInput.focus();
+        }
+    });
+});
+</script>
+{% endblock %}
