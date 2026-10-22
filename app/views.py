@@ -336,9 +336,18 @@ def outing_time_settings_view(request):
 
             datetime.datetime.strptime(str(curfew_time), "%H:%M")
 
-            settings.curfew_time = normalize_time_value(str(curfew_time))
+            new_curfew = normalize_time_value(str(curfew_time))
+            today = timezone.localdate()
+            if new_curfew == OutingTimeSettings.default_curfew_for(today):
+                # Saving the normal time just goes back to the weekday schedule.
+                settings.curfew_time = None
+                settings.curfew_override_date = None
+            else:
+                # A manual curfew only applies to today.
+                settings.curfew_time = new_curfew
+                settings.curfew_override_date = today
             settings.save()
-
+            
             is_ajax = (
                 request.headers.get("X-Requested-With") == "XMLHttpRequest"
                 or request.content_type == "application/json"

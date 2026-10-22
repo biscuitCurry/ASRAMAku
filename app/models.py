@@ -9,6 +9,7 @@ from django.utils import timezone
 
 class OutingTimeSettings(models.Model):
     curfew_time = models.TimeField(null=True, blank=True, default=None)
+    curfew_override_date = models.DateField(null=True, blank=True, default=None)
     max_outing_duration_hours = models.PositiveIntegerField(default=4)
     late_threshold_minutes = models.PositiveIntegerField(default=15)
     max_home_leave_days = models.PositiveIntegerField(default=30)
@@ -20,15 +21,23 @@ class OutingTimeSettings(models.Model):
     def __str__(self):
         return "Outing Time Settings"
 
+    @staticmethod
+    def default_curfew_for(day):
+        """7pm Sun-Wed, 10pm Thu-Sat."""
+        return datetime.time(22, 0) if day.weekday() in (3, 4, 5) else datetime.time(19, 0)
+
     def get_active_curfew_time(self, value=None):
-        """Return the manual curfew or the default for the requested day."""
-        if self.curfew_time is not None:
+        """Return the manual curfew if it was set for that day, otherwise the weekday default."""
+        if value is None:
+            day = timezone.localdate()
+        elif isinstance(value, datetime.datetime):
+            day = timezone.localtime(value).date()
+        else:
+            day = value
+
+        if self.curfew_time is not None and self.curfew_override_date == day:
             return self.curfew_time
-
-        current_value = value or timezone.now()
-        weekday = current_value.weekday()
-        return datetime.time(22, 0) if weekday in (3, 4, 5) else datetime.time(19, 0)
-
+        return self.default_curfew_for(day)
 
 class Student(models.Model):
     name = models.CharField("Name", max_length=100)
