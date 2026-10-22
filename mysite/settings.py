@@ -138,6 +138,13 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = Path.joinpath(BASE_DIR, "static")
 
+# Give static files a content-based name (style.06ffef81.css) so browsers and
+# Cloudflare always fetch the new copy after collectstatic.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"},
+}
+
 MEDIA_URL = "media/"
 MEDIA_ROOT = Path.joinpath(BASE_DIR, "media")
 
