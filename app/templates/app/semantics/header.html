@@ -28,11 +28,6 @@
                                         <i class="fas fa-file-alt"></i> Requests
                                     </a>
                                 </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-warning" href="{% url 'send_outing_request' %}" title="Test the outing form">
-                                        <i class="fas fa-flask"></i> Test Form
-                                    </a>
-                                </li>
                             {% endif %}
                         {% else %}
                             <li class="nav-item">
@@ -81,6 +76,12 @@
                                 <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#outingSettingsModal">
                                     <i class="fas fa-clock fa-sm fa-fw me-2"></i>
                                     Outing Time Settings
+                                </a>
+                                {% endif %}
+                                {% if user.is_superuser %}
+                                <a class="dropdown-item text-warning" href="{% url 'send_outing_request' %}">
+                                    <i class="fas fa-flask fa-sm fa-fw me-2"></i>
+                                    Test Form
                                 </a>
                                 {% endif %}
                                 <a class="dropdown-item text-danger" href="#" onclick="confirmLogout(event)">

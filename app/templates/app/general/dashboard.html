@@ -11,12 +11,16 @@
         <div class="metric-grid">
           <div class="metric-card">
             <small>Present</small>
-            <h3>{{ present_count }}</h3>
+            <h3 id="presentCount">{{ present_count }}</h3>
           </div>
           <div class="metric-card">
-            <small>Late</small>
-            <h3>{{ late_count }}</h3>
+            <small>Currently out</small>
+            <h3 id="outCount">{{ out_count }}</h3>
           </div>
+          <button type="button" class="metric-card metric-card-button" id="lateFilterBtn" aria-pressed="false" title="Show only students who were late on the selected date">
+            <small>Late <i class="fas fa-filter ms-1"></i></small>
+            <h3 id="lateCount">{{ late_count }}</h3>
+          </button>          
           <div class="metric-card">
             <small>Approved</small>
             <h3>{{ approved_count }}</h3>
@@ -93,7 +97,7 @@
               </thead>
               <tbody id="studentTable">
                 {% for item in log_entries %}
-                <tr class="{% if item.is_late %}table-danger{% else %}table-success{% endif %}">
+                <tr class="{% if item.is_late %}table-danger{% else %}table-success{% endif %}" data-late="{% if item.late_on_day %}1{% else %}0{% endif %}">
                   <td>
                       <a href="#" class="student-name-link" data-bs-toggle="modal" data-bs-target="#studentInfoModal"
                         data-photo="{% if item.student.profile_picture %}{{ item.student.profile_picture.url }}{% endif %}"
@@ -153,6 +157,9 @@
                   <td colspan="8" class="text-center text-muted py-4">No records found for this date.</td>
                 </tr>
                 {% endfor %}
+                <tr id="lateEmptyRow" style="display: none">
+                  <td colspan="7" class="text-center text-muted py-4">No late students on this date.</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -212,6 +219,15 @@
         currentDateInput.value = newDateInput.value;
       }
 
+      ["presentCount", "outCount", "lateCount"].forEach(function (id) {
+        const newEl = doc.getElementById(id);
+        const currentEl = document.getElementById(id);
+        if (newEl && currentEl) {
+          currentEl.textContent = newEl.textContent;
+        }
+      });
+      applyLateFilter();
+
       history.replaceState({}, "", targetUrl);
       setTimeout(() => {
         manualDateSelection = false;
@@ -221,6 +237,47 @@
       window.location.search = `?date=${dateStr}`;
     }
   }
+
+    // Late counter: click to show only students who were late on the selected date
+  const lateFilterBtn = document.getElementById("lateFilterBtn");
+  let lateFilterOn = new URL(window.location.href).searchParams.get("late") === "1";
+
+  function applyLateFilter() {
+    const rows = document.querySelectorAll("#studentTable tr[data-late]");
+    let shown = 0;
+    rows.forEach(function (row) {
+      const hide = lateFilterOn && row.dataset.late !== "1";
+      row.style.display = hide ? "none" : "";
+      if (!hide) shown++;
+    });
+
+    const lateEmptyRow = document.getElementById("lateEmptyRow");
+    if (lateEmptyRow) {
+      lateEmptyRow.style.display = lateFilterOn && rows.length && shown === 0 ? "" : "none";
+    }
+
+    if (lateFilterBtn) {
+      lateFilterBtn.classList.toggle("active", lateFilterOn);
+      lateFilterBtn.setAttribute("aria-pressed", lateFilterOn ? "true" : "false");
+    }
+  }
+
+  if (lateFilterBtn) {
+    lateFilterBtn.addEventListener("click", function () {
+      lateFilterOn = !lateFilterOn;
+      const url = new URL(window.location.href);
+      if (lateFilterOn) {
+        url.searchParams.set("late", "1");
+      } else {
+        url.searchParams.delete("late");
+      }
+      history.replaceState({}, "", url);
+      applyLateFilter();
+      if (quickToggleInput) quickToggleInput.focus();
+    });
+  }
+
+  applyLateFilter();
 
   function updateLastUpdated() {
     const serverTimeUrl = '{% url "server_time" %}';

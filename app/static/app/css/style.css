@@ -271,6 +271,24 @@ img {
     letter-spacing: 0.08em;
 }
 
+.metric-card-button {
+    width: 100%;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.metric-card-button:hover {
+    background: rgba(255,255,255,0.14);
+}
+
+.metric-card-button.active {
+    background: rgba(220,53,69,0.35);
+    border-color: rgba(220,53,69,0.8);
+}
+
 .metric-card h3 {
     font-size: clamp(1.8rem, 3vw, 2.5rem);
     font-weight: 800;

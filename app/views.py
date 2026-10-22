@@ -465,19 +465,14 @@ def dashboard(request):
         Student.objects.filter(presence_status="In").exclude(status="Banned").count()
     )
 
-    settings = get_outing_time_settings()
-    curfew_time = settings.get_active_curfew_time(today)
-    curfew_datetime = timezone.make_aware(datetime.datetime.combine(today, curfew_time))
+    out_count = Student.objects.filter(presence_status="Out").count()
+
+    # Students who came back late on the selected date
     late_count = (
         CheckLog.objects.filter(
-            student__presence_status="In",
-            check_in_time__gt=curfew_datetime,
-            check_in_time__lte=timezone.make_aware(
-                datetime.datetime.combine(today, datetime.time.max)
-            ),
+            is_late=True,
+            check_in_time__range=(start_datetime, end_datetime),
         )
-        .values("student_id")
-        .distinct()
         .count()
     )
     approved_count = OutingRequest.objects.filter(
@@ -512,6 +507,11 @@ def dashboard(request):
                 "log": log,
                 "request_status": request_status,
                 "is_late": bool(log.is_late),
+                "late_on_day": bool(
+                    log.is_late
+                    and log.check_in_time
+                    and start_datetime <= log.check_in_time <= end_datetime
+                ),
             }
         )
 
@@ -531,6 +531,7 @@ def dashboard(request):
             "log_entries": log_entries,
             "selected_date_str": selected_date_str,
             "present_count": present_count,
+            "out_count": out_count,
             "late_count": late_count,
             "approved_count": approved_count,
             # "prev_date_str": prev_date_str,
