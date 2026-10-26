@@ -1,58 +1,49 @@
 {% extends "app/base/base.html" %}
 
+{% block title %}Add Student · ASRAMAku{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-8 mx-auto">
-            <div class="card shadow-lg">
-                <div class="card-header bg-success text-white">
-                    <h3 class="mb-0">Add New Student</h3>
+<div class="container main-shell">
+
+    <a href="{% url 'manage_students' %}" class="back-link"><i class="fas fa-arrow-left"></i> Back to students</a>
+    <div class="page-head">
+        <div>
+            <div class="page-kicker">Records</div>
+            <h1>Add New Student</h1>
+            <p>Fields marked <span class="req">*</span> are required.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        {% include "app/semantics/form_fields.html" with sections=True %}
+                    </div>
+                    <div class="form-footer">
+                        <a href="{% url 'manage_students' %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-success"><i class="fas fa-user-plus"></i> Add Student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card guide-card">
+                <div class="card-header">
+                    <h5><span class="header-ico red"><i class="fas fa-pen-to-square"></i></span> Form Guide</h5>
                 </div>
                 <div class="card-body">
-
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-
-                    <div class="alert alert-info py-3 mb-4">
-                        <h5 class="alert-heading mb-2"><i class="fas fa-edit me-2"></i><strong>Form Guide</strong></h5>
-                        <hr class="my-2">
-                        <ul class="mb-0 ps-3">
-                            <li><strong>Full Name & Course:</strong> Enter the student's legal name and official course abbreviation (e.g., Diploma in Computer Science).</li>
-                            <li><strong>Session:</strong> Type the intake batch. The box will auto-format to uppercase with dashes (e.g., typing <code class="text-dark bg-light px-1 rounded">juldis2026</code> becomes <code class="text-dark bg-light px-1 rounded">JUL - DIS 2026</code>).</li>
-                            <li><strong>Matric ID & IC Number:</strong> Enter the matric & IC number.</li>
-                            <li><strong>RFID UID:</strong> Click into the input field and scan the student's IC using the USB reader to capture the chip serial number.</li>
-                            <li><strong>TVETMARA Email:</strong> Enter the official institutional email assigned to the student (e.g., <code class="text-dark bg-light px-1 rounded">student@sgpetani.tvetmara.edu.my</code>).</li>
-                            <li><strong>Parent Contact:</strong> Provide the active phone number of the parent or legal guardian for emergency or checkout alert tracking.</li>
-                        </ul>
-                    </div>
-
-                    <form method="POST" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        
-                        {% for field in form %}
-                            <div class="mb-3">
-                                {{ field.label_tag }}
-                                {{ field }}
-                                {% if field.errors %}
-                                    <div class="alert alert-danger mt-2">
-                                        {{ field.errors }}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-success">Add Student</button>
-                            <a href="{% url 'manage_students' %}" class="btn btn-secondary">Cancel</a>
-                        </div>
-                    </form>
-
+                    <ul class="guide-list">
+                        <li><i class="fas fa-user"></i><div><strong>Full Name & Course</strong>Enter the student's legal name and official course abbreviation (e.g., Diploma in Computer Science).</div></li>
+                        <li><i class="fas fa-calendar"></i><div><strong>Session</strong>Type the intake batch. The box will auto-format to uppercase with dashes (e.g., typing <code>juldis2026</code> becomes <code>JUL - DIS 2026</code>).</div></li>
+                        <li><i class="fas fa-id-card"></i><div><strong>Matric ID & IC Number</strong>Enter the matric & IC number.</div></li>
+                        <li><i class="fas fa-wifi" style="transform: rotate(90deg);"></i><div><strong>RFID UID</strong>Click into the input field and scan the student's IC using the USB reader to capture the chip serial number.</div></li>
+                        <li><i class="fas fa-envelope"></i><div><strong>TVETMARA Email</strong>Enter the official institutional email assigned to the student (e.g., <code>student@sgpetani.tvetmara.edu.my</code>).</div></li>
+                        <li><i class="fas fa-phone"></i><div><strong>Parent Contact</strong>Provide the active phone number of the parent or legal guardian for emergency or checkout alert tracking.</div></li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -70,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Check if the scanner sent an "Enter" key code signaling text input end
             if (e.key === 'Enter') {
                 e.preventDefault(); // Stop the form from submitting immediately!
-                
+
                 // Shift focus to the next field (e.g., Address) so the user can continue typing
                 const nextInput = document.getElementsByName('address')[0];
                 if (nextInput) {

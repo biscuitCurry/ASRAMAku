@@ -4,6 +4,16 @@ function confirmLogout(event) {
     logoutModal.show();
 }
 
+// Turn text into safe HTML before putting it inside a template string
+function escapeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const trigger = document.getElementById('userDropdown');
     const menu = document.getElementById('userDropdownMenu');
@@ -14,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
         notifTrigger.addEventListener('click', function(event) {
             event.preventDefault();
             event.stopPropagation();
+            if (menu) menu.style.display = 'none';
             notifMenu.style.display = (notifMenu.style.display === 'none' || notifMenu.style.display === '') ? 'block' : 'none';
         });
         document.addEventListener('click', function() {
@@ -27,13 +38,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!data) return;
                     const badge = document.getElementById('notifBadge');
                     badge.textContent = data.count;
-                    badge.style.display = data.count > 0 ? 'inline-block' : 'none';
+                    badge.style.display = data.count > 0 ? 'inline-grid' : 'none';
 
                     document.getElementById('notifList').innerHTML = data.items.length
                         ? data.items.map(item => `
                             <a href="/outing/manage/" class="dropdown-item small">
-                                <strong>${item.name}</strong> — ${item.destination}
-                                <div class="text-muted" style="font-size:0.75rem;">${item.time}</div>
+                                <strong>${escapeHtml(item.name)}</strong> — ${escapeHtml(item.destination)}
+                                <div class="text-muted" style="font-size:0.75rem;">${escapeHtml(item.time)}</div>
                             </a>`).join('')
                         : '<div class="dropdown-item small text-muted">No pending requests</div>';
                 })
@@ -49,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
         trigger.addEventListener('click', function(event) {
             event.preventDefault();
             event.stopPropagation();
+            if (notifMenu) notifMenu.style.display = 'none';
             menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'block' : 'none';
         });
 
@@ -57,6 +69,14 @@ document.addEventListener('DOMContentLoaded', function() {
             menu.style.display = 'none';
         });
     }
+
+    // Corner toasts close on their own after a few seconds
+    document.querySelectorAll('#toastStack .alert').forEach(function (toast, i) {
+        setTimeout(function () {
+            toast.classList.remove('show');
+            setTimeout(function () { toast.remove(); }, 200);
+        }, 4500 + i * 400);
+    });
 });
 
 // Stop double submits: lock a form after its first submit, and make "once" links single-use

@@ -1,34 +1,49 @@
 {% extends "app/base/base.html" %}
 
+{% block title %}Delete Student · ASRAMAku{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-6 mx-auto">
-            <div class="card shadow-lg border-danger">
-                <div class="card-header bg-danger text-white">
-                    <h3 class="mb-0">Delete Student</h3>
+<div class="container main-shell">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <a href="{% url 'manage_students' %}" class="back-link"><i class="fas fa-arrow-left"></i> Back to students</a>
+
+            <div class="card danger-card">
+                <div class="card-body text-center confirm-body">
+                    <span class="confirm-ico"><i class="fas fa-trash-can"></i></span>
+                    <h3 class="mb-1">Delete Student</h3>
+                    <p class="text-muted mb-0"><strong>Warning!</strong> Are you sure you want to delete this student?</p>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-warning">
-                        <strong>Warning!</strong> Are you sure you want to delete this student?
-                    </div>
 
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <p><strong>Name:</strong> {{ student.name|upper }}</p>
-                            <p><strong>Student ID:</strong> {{ student.student_id }}</p>
-                            <p><strong>Course:</strong> {{ student.course }}</p>
-                            <p><strong>Session:</strong> {{ student.session }}</p>
+                <div class="card-body pt-0">
+                    <div class="delete-summary">
+                        <div class="person mb-3">
+                            {% with parts=student.name.split %}<span class="avatar">{{ parts.0|slice:":1"|upper }}{{ parts.1|slice:":1"|upper }}</span>{% endwith %}
+                            <div class="min-w-0">
+                                <div class="name">{{ student.name|upper }}</div>
+                                <div class="meta">{{ student.student_id }}</div>
+                            </div>
                         </div>
+                        <dl class="kv kv-compact">
+                            <dt>Course</dt>
+                            <dd>{{ student.course }}</dd>
+                            <dt>Session</dt>
+                            <dd>{{ student.session }}</dd>
+                        </dl>
                     </div>
 
-                    <p class="text-danger"><strong>This action cannot be undone!</strong></p>
+                    <div class="alert alert-danger mt-3 mb-0">
+                        <i class="fas fa-triangle-exclamation"></i>
+                        <span><strong>This action cannot be undone!</strong></span>
+                    </div>
+                </div>
 
+                <div class="form-footer">
+                    <a href="{% url 'manage_students' %}" class="btn btn-secondary">Cancel</a>
                     <form method="POST" style="display: inline;">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Yes, Delete Student</button>
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-trash-can"></i> Yes, Delete Student</button>
                     </form>
-                    <a href="{% url 'manage_students' %}" class="btn btn-secondary">Cancel</a>
                 </div>
             </div>
         </div>

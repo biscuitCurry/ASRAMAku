@@ -1,78 +1,111 @@
 {% extends "app/base/base.html" %}
 
+{% block title %}Request details · ASRAMAku{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-8 mx-auto">
-            <div class="card shadow-lg">
-                <div class="card-header bg-info text-white">
-                    <h3 class="mb-0">Outing Request Details</h3>
+<div class="container main-shell">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+
+            <a href="{% url 'manage_requests' %}" class="back-link"><i class="fas fa-arrow-left"></i> Back to requests</a>
+
+            <div class="page-head">
+                <div>
+                    <div class="page-kicker">{{ request.request_type }}</div>
+                    <h1>Outing Request Details</h1>
+                    <p>Requested {{ request.request_time|date:"M d, Y H:i" }}</p>
                 </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <h5>Student Information</h5>
-                            <p><strong>Name:</strong> {{ request.student.name }}</p>
-                            <p><strong>Student ID:</strong> {{ request.student.student_id }}</p>
-                            <p><strong>Course:</strong> {{ request.student.course }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <h5>Request Status</h5>
-                            <p>
-                                <strong>Status:</strong>
-                                {% if request.status == "Pending" %}
-                                    <span class="badge bg-warning">Pending</span>
-                                {% elif request.status == "Approved" %}
-                                    <span class="badge bg-success">Approved</span>
-                                {% elif request.status == "Rejected" %}
-                                    <span class="badge bg-danger">Rejected</span>
-                                {% endif %}
-                            </p>
-                            <p><strong>Request Date:</strong> {{ request.request_time|date:"M d, Y H:i" }}</p>
+                <div class="actions align-items-center">
+                    {% if request.status == "Pending" %}
+                        <span class="status-pill warning big">Pending</span>
+                    {% elif request.status == "Approved" %}
+                        <span class="status-pill success big">Approved</span>
+                    {% elif request.status == "Rejected" %}
+                        <span class="status-pill danger big">Rejected</span>
+                    {% elif request.status == "Used" %}
+                        <span class="status-pill neutral big">Used</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body profile-side">
+                            {% with parts=request.student.name.split %}<span class="avatar avatar-lg">{{ parts.0|slice:":1"|upper }}{{ parts.1|slice:":1"|upper }}</span>{% endwith %}
+                            <h4 class="mt-3 mb-1">{{ request.student.name }}</h4>
+                            <div class="text-muted mb-3">{{ request.student.course }}</div>
+                            <dl class="kv kv-compact text-start">
+                                <dt>Student ID</dt>
+                                <dd>{{ request.student.student_id }}</dd>
+                                <dt>Course</dt>
+                                <dd>{{ request.student.course }}</dd>
+                            </dl>
                         </div>
                     </div>
+                </div>
 
-                    <hr>
-
-                    <h5>Outing Details</h5>
-                    <p><strong>Type:</strong> {{ request.request_type }}{% if request.return_date %} (return by {{ request.return_date }}){% endif %}</p>
-                    <p><strong>Destination:</strong> {{ request.destination }}</p>
-                    <p><strong>Reason:</strong> {{ request.reason }}</p>
-                    <p><strong>Date:</strong> {{ request.outing_date }}</p>
-                    <p><strong>Time:</strong> {{ request.outing_time }}</p>
-
-                    <hr>
-
-                    <div class="d-flex gap-2">
-                        <a href="{% url 'approve_request' request.id %}" class="btn btn-success once">Approve</a>
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModalDetail">Reject</button>
-                        <a href="{% url 'manage_requests' %}" class="btn btn-secondary">Back</a>
-                    </div>
-
-                    <div class="modal fade" id="rejectModalDetail" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <form method="POST" action="{% url 'reject_request' request.id %}">
-                                {% csrf_token %}
-                                <div class="modal-content">
-                                    <div class="modal-header bg-danger text-white">
-                                        <h5 class="modal-title">Confirm Rejection</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <p>Reject the outing request from <strong>{{ request.student.name }}</strong>?</p>
-                                        <label for="justificationDetail" class="form-label">Justification / Reason:</label>
-                                        <textarea class="form-control" id="justificationDetail" name="justification" rows="3" required></textarea>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-danger">Confirm Rejection</button>
-                                    </div>
+                <div class="col-lg-8">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5><span class="header-ico"><i class="fas fa-route"></i></span> Outing Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="trip">
+                                <div class="trip-point">
+                                    <small>Leave</small>
+                                    <strong>{{ request.outing_date }}</strong>
+                                    <span class="text-muted">{{ request.outing_time }}</span>
                                 </div>
-                            </form>
+                                <div class="trip-line"><i class="fas fa-location-dot"></i><span>{{ request.destination }}</span></div>
+                                <div class="trip-point text-end">
+                                    <small>Return by</small>
+                                    <strong>{% if request.return_date %}{{ request.return_date }}{% else %}-{% endif %}</strong>
+                                    <span class="text-muted">{{ request.request_type }}</span>
+                                </div>
+                            </div>
+
+                            <dl class="kv">
+                                <dt>Type</dt>
+                                <dd>{{ request.request_type }}{% if request.return_date %} (return by {{ request.return_date }}){% endif %}</dd>
+                                <dt>Destination</dt>
+                                <dd>{{ request.destination }}</dd>
+                                <dt>Reason</dt>
+                                <dd>{{ request.reason }}</dd>
+                            </dl>
+                        </div>
+                        <div class="form-footer">
+                            <a href="{% url 'manage_requests' %}" class="btn btn-secondary me-auto">Back</a>
+                            <button type="button" class="btn btn-soft-danger" data-bs-toggle="modal" data-bs-target="#rejectModalDetail"><i class="fas fa-xmark"></i> Reject</button>
+                            <a href="{% url 'approve_request' request.id %}" class="btn btn-success once"><i class="fas fa-check"></i> Approve</a>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <div class="modal fade" id="rejectModalDetail" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <form method="POST" action="{% url 'reject_request' request.id %}">
+                        {% csrf_token %}
+                        <div class="modal-content">
+                            <div class="modal-header modal-header-danger">
+                                <h5 class="modal-title"><span class="header-ico red"><i class="fas fa-xmark"></i></span> Confirm Rejection</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Reject the outing request from <strong>{{ request.student.name }}</strong>?</p>
+                                <label for="justificationDetail" class="form-label">Justification / Reason:</label>
+                                <textarea class="form-control" id="justificationDetail" name="justification" rows="3" required></textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-danger">Confirm Rejection</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>

@@ -1,124 +1,145 @@
 {% extends "app/base/base.html" %}
 
+{% block title %}Home Leave · ASRAMAku{% endblock %}
+
+{# The portal shows its messages above the form #}
+{% block messages %}{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
+<div class="container main-shell">
+    <div class="portal-wrap">
 
-            <div class="hero-panel mb-4">
-                <span class="eyebrow"><i class="fas fa-house-user"></i> Student portal</span>
-                <h1>Home leave permit</h1>
-                <p class="mb-2">
-                    Apply here before going home. Short outings don't need a permit, just scan your card at the hostel entrance.
-                </p>
-            </div>
+        <div class="hero-panel portal-hero">
+            <span class="eyebrow"><i class="fas fa-house-user"></i> Student portal</span>
+            <h1>Home leave permit</h1>
+            <p>
+                Apply here before going home. Short outings don't need a permit, just scan your card at the hostel entrance.
+            </p>
+        </div>
 
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
+        <div class="card portal-card">
+            <div class="card-body p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                            <i class="fas {% if message.tags == 'success' %}fa-circle-check{% elif message.tags == 'error' %}fa-circle-xmark{% else %}fa-circle-info{% endif %}"></i>
+                            <span>{{ message }}</span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
 
-            <div class="card shadow-lg">
-                <div class="card-header">
-                    <h5 class="mb-0" id="cardTitle">Step 1: Verify your identity</h5>
+                <div class="step-tabs" aria-hidden="true">
+                    <div class="step-tab active" id="stepTab1"><span class="num">1</span><span>Verify identity</span></div>
+                    <div class="step-tab" id="stepTab2"><span class="num">2</span><span>Leave details</span></div>
                 </div>
-                <div class="card-body">
-                    <form method="POST" id="permitForm">
-                        {% csrf_token %}
 
-                        <!-- Step 1: identity -->
-                        <div class="mb-3">
-                            <label for="matricId" class="form-label">Matric ID</label>
+                <h5 class="portal-title" id="cardTitle">Step 1: Verify your identity</h5>
+
+                <form method="POST" id="permitForm">
+                    {% csrf_token %}
+
+                    <!-- Step 1: identity -->
+                    <div class="mb-3">
+                        <label for="matricId" class="form-label">Matric ID</label>
+                        <div class="scan-field">
+                            <i class="fas fa-id-badge scan-ico"></i>
                             <input type="text" id="matricId" name="student_id" class="form-control" placeholder="e.g. 333421254940" autocomplete="off" required autofocus>
                         </div>
+                    </div>
 
-                        <div id="verifyError" class="alert alert-danger py-2 d-none" role="alert"></div>
+                    <div id="verifyError" class="alert alert-danger py-2 d-none" role="alert"></div>
 
-                        <div id="verifyActions" class="d-flex gap-2">
-                            <button type="button" id="verifyBtn" class="btn btn-primary">
-                                <i class="fas fa-user-check me-1"></i> Continue
-                            </button>
+                    <div id="verifyActions" class="d-flex gap-2">
+                        <button type="button" id="verifyBtn" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-check"></i> Continue
+                        </button>
+                    </div>
+
+                    <!-- Step 2: shown after verification -->
+                    <div id="permitFields" class="d-none">
+                        <div class="verified-card">
+                            <span class="avatar" id="studentAvatar"></span>
+                            <div class="min-w-0 flex-grow-1">
+                                <div class="verified-label"><i class="fas fa-circle-check"></i> Verified</div>
+                                <strong id="studentName"></strong>
+                                <span class="text-muted" id="studentMeta"></span>
+                            </div>
+                            <button type="button" id="changeBtn" class="btn btn-sm btn-outline-secondary">Not you?</button>
                         </div>
 
-                        <!-- Step 2: shown after verification -->
-                        <div id="permitFields" class="d-none">
-                            <div class="alert alert-success py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <span>
-                                    <i class="fas fa-circle-check me-1"></i>
-                                    <strong id="studentName"></strong>
-                                    <span class="text-muted" id="studentMeta"></span>
-                                </span>
-                                <button type="button" id="changeBtn" class="btn btn-sm btn-outline-secondary">Not you?</button>
+                        <!-- Recent requests -->
+                        <div id="recentBlock" class="mb-4 d-none">
+                            <div class="form-section">Your recent requests</div>
+                            <div class="table-shell table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <tbody id="recentRows"></tbody>
+                                </table>
                             </div>
+                        </div>
 
-                            <!-- Recent requests -->
-                            <div id="recentBlock" class="mb-4 d-none">
-                                <label class="form-label">Your recent requests</label>
-                                <div class="table-responsive">
-                                    <table class="table table-sm align-middle mb-0">
-                                        <tbody id="recentRows"></tbody>
-                                    </table>
-                                </div>
-                            </div>
+                        <div class="form-section">Leave details</div>
 
-                            <hr>
+                        <div class="alert alert-info py-2 mb-3">
+                            <i class="fas fa-circle-info"></i>
+                            <span>Anda mesti kembali ke asrama pada tarikh pulang yang dinyatakan dalam permohonan ini.</span>
+                        </div>
 
-                            <div class="alert alert-info py-2 mb-3">
-                                Anda mesti kembali ke asrama pada tarikh pulang yang dinyatakan dalam permohonan ini.
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="destination" class="form-label">Destination</label>
+                        <div class="mb-3">
+                            <label for="destination" class="form-label">Destination</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-location-dot"></i></span>
                                 <input type="text" name="destination" id="destination" class="form-control" placeholder="Where are you going?" maxlength="255">
                             </div>
-
-                            <div class="mb-3">
-                                <label for="reason" class="form-label">Purpose</label>
-                                <textarea name="reason" id="reason" class="form-control" rows="3" placeholder="Reason for your home leave"></textarea>
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-4">
-                                    <label for="outingDate" class="form-label">Leave date</label>
-                                    <input type="date" name="outing_date" id="outingDate" class="form-control">
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="timeHour" class="form-label">Leave time</label>
-                                    <div class="d-flex gap-1">
-                                        <select id="timeHour" class="form-select px-2" aria-label="Hour"></select>
-                                        <select id="timeMinute" class="form-select px-2" aria-label="Minute"></select>
-                                        <select id="timePeriod" class="form-select px-2" aria-label="AM or PM">
-                                            <option>AM</option>
-                                            <option>PM</option>
-                                        </select>
-                                    </div>
-                                    <input type="hidden" name="outing_time" id="outingTime">
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="returnDate" class="form-label">Return date</label>
-                                    <input type="date" name="return_date" id="returnDate" class="form-control">
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-paper-plane me-1"></i> Submit request
-                            </button>
                         </div>
-                    </form>
-                </div>
+
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Purpose</label>
+                            <textarea name="reason" id="reason" class="form-control" rows="3" placeholder="Reason for your home leave"></textarea>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label for="outingDate" class="form-label"><i class="fas fa-person-walking-luggage me-1 text-muted"></i> Leave date</label>
+                                <input type="date" name="outing_date" id="outingDate" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="timeHour" class="form-label"><i class="fas fa-clock me-1 text-muted"></i> Leave time</label>
+                                <div class="d-flex gap-1">
+                                    <select id="timeHour" class="form-select px-2" aria-label="Hour"></select>
+                                    <select id="timeMinute" class="form-select px-2" aria-label="Minute"></select>
+                                    <select id="timePeriod" class="form-select px-2" aria-label="AM or PM">
+                                        <option>AM</option>
+                                        <option>PM</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" name="outing_time" id="outingTime">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="returnDate" class="form-label"><i class="fas fa-building-circle-check me-1 text-muted"></i> Return date</label>
+                                <input type="date" name="return_date" id="returnDate" class="form-control">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-paper-plane"></i> Submit request
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            {% if not user.is_authenticated %}
-            <p class="text-center text-muted mt-3 small">
-                Hostel staff? <a href="{% url 'login' %}">Log in here</a>.
-            </p>
-            {% endif %}
-
         </div>
+
+        <div class="portal-notes">
+            <div><span class="header-ico"><i class="fas fa-envelope-open-text"></i></span><span>You'll get an email once the warden decides.</span></div>
+            <div><span class="header-ico red"><i class="fas fa-id-card"></i></span><span>Scan your card at the entrance when you leave and return.</span></div>
+        </div>
+
+        {% if not user.is_authenticated %}
+        <p class="text-center text-muted mt-3 small">
+            Hostel staff? <a href="{% url 'login' %}">Log in here</a>.
+        </p>
+        {% endif %}
+
     </div>
 </div>
 {% endblock %}
@@ -150,10 +171,17 @@ document.addEventListener('DOMContentLoaded', function () {
         verifyActions.classList.toggle('d-none', verified);
         stepTwoInputs.forEach(el => el.required = verified);
         cardTitle.textContent = verified ? 'Step 2: Home leave details' : 'Step 1: Verify your identity';
+
+        // Step tabs at the top of the card
+        document.getElementById('stepTab1').classList.toggle('active', !verified);
+        document.getElementById('stepTab1').classList.toggle('done', verified);
+        document.getElementById('stepTab2').classList.toggle('active', verified);
         if (!verified) return;
 
         document.getElementById('studentName').textContent = data.name;
         document.getElementById('studentMeta').textContent = ' · ' + data.course + ' · ' + data.session;
+        document.getElementById('studentAvatar').textContent = String(data.name || '?')
+            .split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 
         const rows = document.getElementById('recentRows');
         rows.replaceChildren();

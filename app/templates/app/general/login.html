@@ -1,52 +1,86 @@
 {% extends "app/base/base.html" %}
+{% load static %}
 
-{% block content %}
-<div class="login-shell">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-5 col-md-7 col-sm-10">
-                <div class="card login-card panel-surface">
-                    <div class="card-header text-center">
-                        <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
-                            <span class="brand-mark" aria-hidden="true" style="width: 34px; height: 34px;"></span>
-                            <h3 class="mb-0">ASRAMAku</h3>
-                        </div>
-                        <p class="mb-0 mt-2 text-white-50">Staff Login</p>
+{% block title %}Staff Login · ASRAMAku{% endblock %}
+
+{# Login shows its messages inside the form card #}
+{% block messages %}{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-art">
+        <a class="auth-logo" href="{% url 'index' %}">
+            <img src="{% static 'app/img/asramaku_logo_wide.png' %}" alt="ASRAMAku">
+        </a>
+        <h2>Every outing, every return, in one place.</h2>
+        <p>The hostel outing system for TVETMARA Sungai Petani. Scan cards at the entrance, approve home leave, and catch late returns as they happen.</p>
+        <div class="auth-feature"><i class="fas fa-id-card"></i> RFID check in and check out at the guard post</div>
+        <div class="auth-feature"><i class="fas fa-file-signature"></i> Home leave requests approved in one click</div>
+        <div class="auth-feature"><i class="fas fa-clock-rotate-left"></i> Late returns flagged against the curfew</div>
+    </div>
+
+    <div class="auth-panel">
+        <div class="auth-box">
+            <a href="{% url 'index' %}"><img class="auth-mobile-logo" src="{% static 'app/img/asramaku_logo_wide.png' %}" alt="ASRAMAku"></a>
+
+            <div class="page-kicker">Staff Login</div>
+            <h1>Welcome back</h1>
+            <p class="text-muted mb-4">Sign in with your warden or guard account.</p>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                        <i class="fas {% if message.tags == 'success' %}fa-circle-check{% else %}fa-exclamation-circle{% endif %}"></i> <span>{{ message }}</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                    <div class="card-body">
-                        {% if messages %}
-                            {% for message in messages %}
-                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                    <i class="fas fa-exclamation-circle"></i> {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
+                {% endfor %}
+            {% endif %}
 
-                        <form method="POST" action="{% url 'login' %}">
-                            {% csrf_token %}
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
 
-                            <div class="mb-3">
-                                <label for="username" class="form-label fw-semibold">Username</label>
-                                <input type="text" id="username" name="username" class="form-control" placeholder="Enter your username" required autofocus>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="password" class="form-label fw-semibold">Password</label>
-                                <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary w-100 mb-3">
-                                <i class="fas fa-sign-in-alt me-2"></i> Login
-                            </button>
-                        </form>
-                            <p class="text-center text-muted small mb-0">
-                                Student? <a href="{% url 'index' %}">Apply for home leave here</a>.
-                            </p>
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                        <input type="text" id="username" name="username" class="form-control" placeholder="Enter your username" autocomplete="username" required autofocus>
                     </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" autocomplete="current-password" required>
+                        <button type="button" class="btn btn-light" id="togglePassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                    <i class="fas fa-right-to-bracket"></i> Login
+                </button>
+            </form>
+
+            <div class="auth-alt">
+                <span class="header-ico red"><i class="fas fa-house-user"></i></span>
+                <div>
+                    <strong>Student?</strong>
+                    <div class="text-muted small">You don't need an account. <a href="{% url 'index' %}">Apply for home leave here</a>.</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('togglePassword').addEventListener('click', function () {
+    const field = document.getElementById('password');
+    const show = field.type === 'password';
+    field.type = show ? 'text' : 'password';
+    this.innerHTML = show ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+    this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+});
+</script>
 {% endblock %}

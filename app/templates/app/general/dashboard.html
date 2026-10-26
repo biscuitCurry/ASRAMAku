@@ -1,65 +1,99 @@
 {% extends "app/base/base.html" %}
 
+{% block title %}Dashboard · ASRAMAku{% endblock %}
+
+{# Scan results are shown inside the scan card instead of the corner toasts #}
+{% block messages %}{% endblock %}
+
 {% block content %}
-<div class="container main-shell mt-4">
+<div class="container main-shell">
   <div class="row g-4">
     <div class="col-12">
-      <div class="hero-panel panel-surface">
-        <div class="eyebrow"><i class="fas fa-shield-alt"></i> Student monitoring</div>
-        <h1>Operations dashboard</h1>
-        <p>Track attendance, outing status, and late arrivals in one streamlined workspace designed for quick decisions.</p>
+      <div class="hero-panel">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+          <div>
+            <div class="eyebrow"><i class="fas fa-shield-halved"></i> Student monitoring</div>
+            <h1>Operations dashboard</h1>
+            <p>Track attendance, outing status, and late arrivals in one streamlined workspace designed for quick decisions.</p>
+          </div>
+        </div>
         <div class="metric-grid">
           <div class="metric-card">
-            <small>Present</small>
+            <small><span class="metric-ico"><i class="fas fa-house-circle-check"></i></span> Present</small>
             <h3 id="presentCount">{{ present_count }}</h3>
           </div>
           <div class="metric-card">
-            <small>Currently out</small>
+            <small><span class="metric-ico"><i class="fas fa-person-walking-arrow-right"></i></span> Currently out</small>
             <h3 id="outCount">{{ out_count }}</h3>
           </div>
           <button type="button" class="metric-card metric-card-button" id="lateFilterBtn" aria-pressed="false" title="Show only students who were late on the selected date">
-            <small>Late <i class="fas fa-filter ms-1"></i></small>
+            <small><span class="metric-ico"><i class="fas fa-clock-rotate-left"></i></span> Late <span class="metric-hint"><i class="fas fa-filter"></i> Filter</span></small>
             <h3 id="lateCount">{{ late_count }}</h3>
-          </button>          
+          </button>
           <div class="metric-card">
-            <small>Approved</small>
+            <small><span class="metric-ico"><i class="fas fa-file-circle-check"></i></span> Approved</small>
             <h3>{{ approved_count }}</h3>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="col-12">
-      {% if messages %} {% for message in messages %}
-      <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show auto-fade" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-      {% endfor %} {% endif %}
-    </div>
-
-    <div class="col-12">
-      <div class="card panel-surface">
-        <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-          <div class="d-flex align-items-center gap-2">
-            <h5 class="mb-0">Check in / out</h5>
-          </div>
-          <span class="badge bg-light text-dark fw-normal">
+    <div class="col-lg-8">
+      <div class="card panel-surface scan-card h-100">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <h5><span class="header-ico"><i class="fas fa-id-card"></i></span> Check in / out</h5>
+          <span class="badge bg-light text-dark fw-normal" id="viewingBadge">
             Viewing: {% if selected_date_str %}{{ selected_date_str }}{% else %}Today{% endif %}
           </span>
         </div>
         <div class="card-body">
           <form method="POST" id="quickToggleForm">
             {% csrf_token %}
-            <div class="mb-3">
-              <label for="student_id" class="form-label fw-semibold">Enter Student ID / ID Card / RFID</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                <input type="text" id="student_id" name="student_id" class="form-control" required autofocus placeholder="Scan or type the student identifier" />
-                <button type="submit" class="btn btn-success">Submit</button>
-              </div>
+            <label for="student_id" class="form-label">Enter Student ID / ID Card / RFID</label>
+            <div class="scan-field">
+              <i class="fas fa-wifi scan-ico" style="transform: translateY(-50%) rotate(90deg);"></i>
+              <input type="text" id="student_id" name="student_id" class="form-control" required autofocus autocomplete="off" placeholder="Scan or type the student identifier" />
+              <button type="submit" class="btn btn-success"><i class="fas fa-arrow-right-arrow-left"></i><span class="d-none d-sm-inline">Submit</span></button>
+            </div>
+            <div class="scan-hint">
+              <span class="live">Reader ready</span>
+              <span><i class="fas fa-keyboard me-1"></i> Press Enter to submit</span>
+              <span><i class="fas fa-repeat me-1"></i> Scanning toggles in and out</span>
             </div>
           </form>
+
+          {% if messages %}
+          <div class="scan-feedback">
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show auto-fade" role="alert">
+              <i class="lead-ico fas {% if message.tags == 'success' %}fa-circle-check{% elif message.tags == 'error' %}fa-circle-xmark{% elif message.tags == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i>
+              <span>{{ message }}</span>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card panel-surface clock-card h-100">
+        <div class="card-body">
+          <div class="clock-top">
+            <div>
+              <div class="scan-clock" id="liveClock">--:--</div>
+              <div class="scan-date" id="liveDate">&nbsp;</div>
+            </div>
+            <span class="header-ico red"><i class="fas fa-clock"></i></span>
+          </div>
+          <div class="legend">
+            <div class="legend-title">Status guide</div>
+            <div><span class="status-pill success">In (On time)</span><small>Back before curfew</small></div>
+            <div><span class="status-pill danger">In (Late)</span><small>Back after curfew</small></div>
+            <div><span class="status-pill neutral">Out</span><small>Still outside</small></div>
+            <div><span class="status-pill info">Home Leave</span><small>Approved permit</small></div>
+          </div>
         </div>
       </div>
     </div>
@@ -67,28 +101,32 @@
     <div class="col-12">
       <div class="card panel-surface">
         <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-          <div class="d-flex align-items-center gap-2">
-            <h5 class="mb-0">Student monitoring</h5>
-          </div>
-          <small class="text-muted">Last updated: <span id="lastUpdate">now</span></small>
+          <h5><span class="header-ico"><i class="fas fa-list-check"></i></span> Student monitoring</h5>
+          <small class="text-muted"><i class="fas fa-rotate me-1"></i>Last updated: <span id="lastUpdate" class="tabular">now</span></small>
         </div>
         <div class="card-body">
-          <div class="row align-items-center mb-4 g-3">
-            <div class="col-12">
+          <div class="toolbar mb-3">
+            <div class="date-nav">
+              <button type="button" class="btn btn-light btn-sm" id="prevDayBtn" aria-label="Previous day"><i class="fas fa-chevron-left"></i></button>
               <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                <span class="input-group-text"><i class="fas fa-calendar-days"></i></span>
                 <input type="date" id="datePicker" class="form-control" value="{{ selected_date_str }}" onchange="navigateDate(this.value)" />
               </div>
+              <button type="button" class="btn btn-light btn-sm" id="nextDayBtn" aria-label="Next day"><i class="fas fa-chevron-right"></i></button>
+              <button type="button" class="btn btn-soft-primary btn-sm" id="todayBtn">Today</button>
+            </div>
+            <div class="search-box ms-md-auto">
+              <i class="fas fa-magnifying-glass"></i>
+              <input type="search" id="tableSearch" class="form-control" placeholder="Search name, ID or course" aria-label="Search the table">
             </div>
           </div>
 
           <div class="table-shell table-responsive">
-            <table class="table align-middle mb-0">
+            <table class="table table-stack align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>Student</th>
                   <th>Activity</th>
-                  <th>Student ID</th>
                   <th>Course</th>
                   <th>Status</th>
                   <th>Out</th>
@@ -99,7 +137,7 @@
                 {% for item in log_entries %}
                 <tr class="{% if item.is_late %}table-danger{% else %}table-success{% endif %}" data-late="{% if item.late_on_day %}1{% else %}0{% endif %}">
                   <td>
-                      <a href="#" class="student-name-link" data-bs-toggle="modal" data-bs-target="#studentInfoModal"
+                      <a href="#" class="student-name-link person" data-bs-toggle="modal" data-bs-target="#studentInfoModal"
                         data-photo="{% if item.student.profile_picture %}{{ item.student.profile_picture.url }}{% endif %}"
                         data-name="{{ item.student.name }}"
                         data-course="{{ item.student.course }}"
@@ -108,19 +146,26 @@
                         data-address="{{ item.student.address|default:'-' }}"
                         data-phone="{{ item.student.phone_number|default:'-' }}"
                         data-parent="{{ item.student.parent_contact|default:'-' }}">
-                          {{ item.student.name }}
+                          {% if item.student.profile_picture %}
+                          <img src="{{ item.student.profile_picture.url }}" alt="" class="avatar">
+                          {% else %}
+                          {% with parts=item.student.name.split %}<span class="avatar">{{ parts.0|slice:":1"|upper }}{{ parts.1|slice:":1"|upper }}</span>{% endwith %}
+                          {% endif %}
+                          <span class="min-w-0">
+                            <span class="name d-block">{{ item.student.name }}</span>
+                            <span class="meta d-block">{{ item.student.student_id }}</span>
+                          </span>
                       </a>
                   </td>
-                  <td>
+                  <td data-label="Activity">
                     {% if item.log.outing_request and item.log.outing_request.request_type == "Home Leave" %}
                       <span class="status-pill info" title="Return by {{ item.log.outing_request.return_date|date:'d M Y' }}">Home Leave</span>
                     {% else %}
                       <span class="status-pill neutral">Outing</span>
                     {% endif %}
                   </td>
-                  <td>{{ item.student.student_id }}</td>
-                  <td>{{ item.student.course }}</td>
-                  <td>
+                  <td data-label="Course"><span class="text-muted">{{ item.student.course }}</span></td>
+                  <td data-label="Status">
                     {% if item.log.check_in_time %}
                       {% if item.is_late %}
                       <span class="status-pill danger" title="Checked in late">In (Late)</span>
@@ -137,16 +182,16 @@
                       {% endif %}
                     {% endif %}
                   </td>
-                  <td>
+                  <td data-label="Out">
                     {% if item.log.check_out_time %}
-                    <span class="fw-semibold">{{ item.log.check_out_time|date:"M d, Y H:i" }}</span>
+                    <span class="time-cell"><strong>{{ item.log.check_out_time|date:"H:i" }}</strong><small>{{ item.log.check_out_time|date:"M d, Y" }}</small></span>
                     {% else %}
                     <span class="text-muted">-</span>
                     {% endif %}
                   </td>
-                  <td>
+                  <td data-label="In">
                     {% if item.log.check_in_time %}
-                    <span class="fw-semibold">{{ item.log.check_in_time|date:"M d, Y H:i" }}</span>
+                    <span class="time-cell"><strong>{{ item.log.check_in_time|date:"H:i" }}</strong><small>{{ item.log.check_in_time|date:"M d, Y" }}</small></span>
                     {% else %}
                     <span class="text-muted">-</span>
                     {% endif %}
@@ -154,11 +199,14 @@
                 </tr>
                 {% empty %}
                 <tr>
-                  <td colspan="8" class="text-center text-muted py-4">No records found for this date.</td>
+                  <td colspan="6" class="empty-state"><i class="fas fa-calendar-xmark"></i>No records found for this date.</td>
                 </tr>
                 {% endfor %}
                 <tr id="lateEmptyRow" style="display: none">
-                  <td colspan="7" class="text-center text-muted py-4">No late students on this date.</td>
+                  <td colspan="6" class="empty-state"><i class="fas fa-face-smile"></i>No late students on this date.</td>
+                </tr>
+                <tr id="searchEmptyRow" style="display: none">
+                  <td colspan="6" class="empty-state"><i class="fas fa-magnifying-glass"></i>No students match your search.</td>
                 </tr>
               </tbody>
             </table>
@@ -196,15 +244,11 @@
       const doc = parser.parseFromString(html, "text/html");
 
       const newTable = doc.querySelector("#studentTable");
-      const newBadge = doc.querySelector(
-        ".card-header .badge.bg-light.text-dark.fw-normal",
-      );
+      const newBadge = doc.querySelector("#viewingBadge");
       const newDateInput = doc.querySelector("#datePicker");
 
       const currentTable = document.querySelector("#studentTable");
-      const currentBadge = document.querySelector(
-        ".card-header .badge.bg-light.text-dark.fw-normal",
-      );
+      const currentBadge = document.querySelector("#viewingBadge");
       const currentDateInput = document.getElementById("datePicker");
 
       if (newTable && currentTable) {
@@ -227,6 +271,7 @@
         }
       });
       applyLateFilter();
+      applySearch();
 
       history.replaceState({}, "", targetUrl);
       setTimeout(() => {
@@ -273,9 +318,59 @@
       }
       history.replaceState({}, "", url);
       applyLateFilter();
+      applySearch();
       if (quickToggleInput) quickToggleInput.focus();
     });
   }
+
+  // Search box: hides rows on this page only (uses a class, so it works together with the late filter)
+  const tableSearch = document.getElementById("tableSearch");
+  function applySearch() {
+    const term = (tableSearch ? tableSearch.value : "").trim().toLowerCase();
+    let matches = 0;
+    let visibleBefore = 0;
+    document.querySelectorAll("#studentTable tr[data-late]").forEach(function (row) {
+      const hit = !term || row.textContent.toLowerCase().includes(term);
+      row.classList.toggle("search-hide", !hit);
+      if (row.style.display !== "none") {
+        visibleBefore++;
+        if (hit) matches++;
+      }
+    });
+    const searchEmptyRow = document.getElementById("searchEmptyRow");
+    if (searchEmptyRow) {
+      searchEmptyRow.style.display = term && visibleBefore && matches === 0 ? "" : "none";
+    }
+  }
+  if (tableSearch) tableSearch.addEventListener("input", applySearch);
+
+  // Previous / next / today buttons reuse the date picker
+  function shiftDate(days) {
+    const picker = document.getElementById("datePicker");
+    const base = picker.value ? new Date(picker.value + "T00:00:00") : new Date();
+    base.setDate(base.getDate() + days);
+    const iso = base.getFullYear() + "-" + String(base.getMonth() + 1).padStart(2, "0") + "-" + String(base.getDate()).padStart(2, "0");
+    picker.value = iso;
+    navigateDate(iso);
+  }
+  document.getElementById("prevDayBtn").addEventListener("click", function () { shiftDate(-1); });
+  document.getElementById("nextDayBtn").addEventListener("click", function () { shiftDate(1); });
+  document.getElementById("todayBtn").addEventListener("click", function () {
+    const now = new Date();
+    const iso = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    document.getElementById("datePicker").value = iso;
+    navigateDate(iso);
+  });
+
+  // Live clock in the side card
+  function tickClock() {
+    const now = new Date();
+    const h = now.getHours();
+    document.getElementById("liveClock").textContent = (h % 12 || 12) + ":" + String(now.getMinutes()).padStart(2, "0") + (h < 12 ? " AM" : " PM");
+    document.getElementById("liveDate").textContent = now.toLocaleDateString("en-MY", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
 
   applyLateFilter();
 
@@ -404,6 +499,9 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 img.classList.add('d-none');
                 placeholder.classList.remove('d-none');
+                // Show the student's initials in place of a photo
+                placeholder.textContent = (trigger.getAttribute('data-name') || '?')
+                    .split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
             }
         });
     }
@@ -414,45 +512,29 @@ document.addEventListener('DOMContentLoaded', function () {
 <div class="modal fade" id="studentInfoModal" tabindex="-1" aria-labelledby="studentInfoModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="studentInfoModalLabel"><i class="fas fa-id-card me-2"></i>Student Information</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-header">
+        <h5 class="modal-title" id="studentInfoModalLabel"><span class="header-ico"><i class="fas fa-id-card"></i></span>Student Information</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div class="col-12 text-center mb-2">
-          <img id="modalStudentPhoto" src="" alt="" class="rounded-circle d-none" style="width:100px;height:100px;object-fit:cover;">
-          <i id="modalStudentNoPhoto" class="fas fa-user-circle" style="font-size:100px;color:#ccd6e0;"></i>
-      </div>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <small class="text-muted d-block">Name</small>
-            <p class="fw-semibold mb-0" id="modalStudentName">-</p>
-          </div>
-          <div class="col-md-6">
-            <small class="text-muted d-block">Course</small>
-            <p class="fw-semibold mb-0" id="modalStudentCourse">-</p>
-          </div>
-          <div class="col-md-6">
-            <small class="text-muted d-block">Session</small>
-            <p class="fw-semibold mb-0" id="modalStudentSession">-</p>
-          </div>
-          <div class="col-md-6">
-            <small class="text-muted d-block">IC Number</small>
-            <p class="fw-semibold mb-0" id="modalStudentIC">-</p>
-          </div>
-          <div class="col-12">
-            <small class="text-muted d-block">Address</small>
-            <p class="fw-semibold mb-0" id="modalStudentAddress">-</p>
-          </div>
-          <div class="col-md-6">
-            <small class="text-muted d-block">Phone Number</small>
-            <p class="fw-semibold mb-0" id="modalStudentPhone">-</p>
-          </div>
-          <div class="col-md-6">
-            <small class="text-muted d-block">Parent/Guardian Contact</small>
-            <p class="fw-semibold mb-0" id="modalStudentParent">-</p>
+        <div class="student-hero">
+          <img id="modalStudentPhoto" src="" alt="" class="avatar avatar-lg d-none">
+          <span id="modalStudentNoPhoto" class="avatar avatar-lg">?</span>
+          <div class="min-w-0">
+            <h4 class="mb-1" id="modalStudentName">-</h4>
+            <div class="text-muted"><span id="modalStudentCourse">-</span> · <span id="modalStudentSession">-</span></div>
           </div>
         </div>
+        <dl class="kv">
+          <dt><i class="fas fa-address-card fa-fw me-1"></i> IC Number</dt>
+          <dd id="modalStudentIC">-</dd>
+          <dt><i class="fas fa-location-dot fa-fw me-1"></i> Address</dt>
+          <dd id="modalStudentAddress">-</dd>
+          <dt><i class="fas fa-phone fa-fw me-1"></i> Phone Number</dt>
+          <dd id="modalStudentPhone">-</dd>
+          <dt><i class="fas fa-people-roof fa-fw me-1"></i> Parent/Guardian</dt>
+          <dd id="modalStudentParent">-</dd>
+        </dl>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

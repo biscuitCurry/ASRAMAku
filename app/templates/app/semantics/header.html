@@ -1,20 +1,85 @@
+{% load static %}
 <header class="topbar">
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg">
         <div class="container main-shell">
-            <a class="navbar-brand" href="{% url 'index' %}">
-                <span class="brand-mark" aria-hidden="true"></span>
-                <span class="brand-wordmark"><span class="brand-red">ASRAMA</span><span>ku</span></span>
+            <a class="navbar-brand" href="{% url 'index' %}" aria-label="ASRAMAku home">
+                <img class="brand-logo" src="{% static 'app/img/asramaku_logo_wide.png' %}" alt="ASRAMAku">
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+
+            <!-- Bell, account menu and the mobile menu button stay visible on every screen size -->
+            <div class="nav-actions order-lg-last">
+                {% if user.is_authenticated %}
+                    {% if user.is_staff %}
+                    <div class="position-relative" id="notifContainer">
+                        <a class="nav-icon-btn" href="#" id="notifBell" role="button" title="Pending outing requests" aria-label="Pending outing requests">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge" id="notifBadge" style="{% if pending_request_count == 0 %}display:none;{% endif %}">{{ pending_request_count }}</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end notif-menu menu-pop" id="notifDropdown">
+                            <div class="notif-head"><span class="header-ico red"><i class="fas fa-bell"></i></span> Pending outing requests</div>
+                            <div id="notifList">
+                                {% for r in pending_requests_preview %}
+                                <a href="{% url 'manage_requests' %}" class="dropdown-item small">
+                                    <strong>{{ r.student.name }}</strong> — {{ r.destination }}
+                                    <div class="text-muted" style="font-size:0.75rem;">{{ r.request_time|date:"M d, H:i" }}</div>
+                                </a>
+                                {% empty %}
+                                <div class="dropdown-item small text-muted">No pending requests</div>
+                                {% endfor %}
+                            </div>
+                            <a href="{% url 'manage_requests' %}" class="notif-foot">View all requests <i class="fas fa-arrow-right ms-1"></i></a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="position-relative" id="userMenuContainer">
+                        <a class="user-pill" href="#" id="userDropdown" role="button" aria-label="Account menu">
+                            <span class="avatar">{{ user.username|slice:":2"|upper }}</span>
+                            <span class="username d-none d-md-inline">{{ user.username }}</span>
+                            <i class="fas fa-chevron-down small text-muted"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end menu-pop user-menu" id="userDropdownMenu">
+                            <div class="user-menu-head">
+                                <strong>{{ user.username }}</strong>
+                                <small>{% if user.is_superuser %}Administrator{% elif user.is_staff %}{% if "GUARD" in user.username %}Guard{% else %}Warden{% endif %}{% else %}Student{% endif %}</small>
+                            </div>
+                            {% if user.is_staff %}
+                            <a class="dropdown-item" href="{% url 'my_profile' %}">
+                                <i class="fas fa-user fa-fw me-2"></i>
+                                Profile
+                            </a>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#outingSettingsModal">
+                                <i class="fas fa-clock fa-fw me-2"></i>
+                                Outing Time Settings
+                            </a>
+                            {% endif %}
+                            {% if user.is_superuser %}
+                            <a class="dropdown-item text-warning" href="{% url 'send_outing_request' %}">
+                                <i class="fas fa-flask fa-fw me-2"></i>
+                                Test Form
+                            </a>
+                            {% endif %}
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item text-danger" href="#" onclick="confirmLogout(event)">
+                                <i class="fas fa-right-from-bracket fa-fw me-2"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-lg-center">
+                <ul class="navbar-nav me-auto">
                     {% if user.is_authenticated %}
                         {% if user.is_staff %}
                             <li class="nav-item">
                                 <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-                                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                                    <i class="fas fa-gauge-high"></i> Dashboard
                                 </a>
                             </li>
                             {% if "GUARD" not in user.username %}
@@ -25,7 +90,8 @@
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.resolver_match.url_name == 'manage_requests' %}active{% endif %}" href="{% url 'manage_requests' %}">
-                                        <i class="fas fa-file-alt"></i> Requests
+                                        <i class="fas fa-file-signature"></i> Requests
+                                        {% if pending_request_count %}<span class="nav-count">{{ pending_request_count }}</span>{% endif %}
                                     </a>
                                 </li>
                             {% endif %}
@@ -36,60 +102,6 @@
                                 </a>
                             </li>
                         {% endif %}
-
-                        {% if user.is_staff %}
-                        <li class="nav-item dropdown no-arrow position-relative" id="notifContainer">
-                            <a class="nav-link position-relative" href="#" id="notifBell" role="button" style="cursor:pointer;" title="Pending outing requests">
-                                <i class="fas fa-bell fa-lg"></i>
-                                <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle" id="notifBadge" style="font-size:0.65rem;{% if pending_request_count == 0 %}display:none;{% endif %}">
-                                    {{ pending_request_count }}
-                                </span>
-                            </a>
-                            <div class="dropdown-menu dropdown-menu-end shadow" id="notifDropdown" style="display:none; position:absolute; right:0; top:100%; z-index:1050; min-width:280px;">
-                                <div class="px-3 py-2 fw-semibold border-bottom">Pending Outing Requests</div>
-                                <div id="notifList">
-                                    {% for r in pending_requests_preview %}
-                                    <a href="{% url 'manage_requests' %}" class="dropdown-item small">
-                                        <strong>{{ r.student.name }}</strong> — {{ r.destination }}
-                                        <div class="text-muted" style="font-size:0.75rem;">{{ r.request_time|date:"M d, H:i" }}</div>
-                                    </a>
-                                    {% empty %}
-                                    <div class="dropdown-item small text-muted">No pending requests</div>
-                                    {% endfor %}
-                                </div>
-                                <a href="{% url 'manage_requests' %}" class="dropdown-item text-center small text-primary border-top">View all</a>
-                            </div>
-                        </li>
-                        {% endif %}
-
-                        <li class="nav-item dropdown no-arrow position-relative" id="userMenuContainer">
-                            <a class="user-pill dropdown-toggle" href="#" id="userDropdown" role="button" style="cursor: pointer;">
-                                <span class="username d-none d-lg-inline">{{ user.username }}</span>
-                                <i class="fas fa-user-circle fa-lg"></i>
-                            </a>
-                            <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in" id="userDropdownMenu" style="display: none; position: absolute; right: 0; top: 100%; z-index: 1050; min-width: 210px;">
-                                {% if user.is_staff %}
-                                <a class="dropdown-item" href="{% url 'my_profile' %}">
-                                    <i class="fas fa-user fa-sm fa-fw me-2"></i>
-                                    Profile
-                                </a>
-                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#outingSettingsModal">
-                                    <i class="fas fa-clock fa-sm fa-fw me-2"></i>
-                                    Outing Time Settings
-                                </a>
-                                {% endif %}
-                                {% if user.is_superuser %}
-                                <a class="dropdown-item text-warning" href="{% url 'send_outing_request' %}">
-                                    <i class="fas fa-flask fa-sm fa-fw me-2"></i>
-                                    Test Form
-                                </a>
-                                {% endif %}
-                                <a class="dropdown-item text-danger" href="#" onclick="confirmLogout(event)">
-                                    <i class="fas fa-sign-out-alt fa-sm fa-fw me-2"></i>
-                                    Logout
-                                </a>
-                            </div>
-                        </li>
                     {% else %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'index' %}">
@@ -110,16 +122,12 @@
 
 <!-- Logout Modal -->
 <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-sm-wide">
         <div class="modal-content">
-            <div class="modal-header bg-warning">
-                <h5 class="modal-title" id="logoutModalLabel">
-                    <i class="fas fa-exclamation-circle"></i> Confirm Logout
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to logout?</p>
+            <div class="modal-body text-center confirm-body">
+                <span class="confirm-ico"><i class="fas fa-right-from-bracket"></i></span>
+                <h5 class="modal-title justify-content-center" id="logoutModalLabel">Log out of ASRAMAku?</h5>
+                <p class="text-muted mb-0">You'll need your username and password to sign back in.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -130,35 +138,36 @@
 </div>
 
 <div class="modal fade" id="outingSettingsModal" tabindex="-1" aria-labelledby="outingSettingsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header">
                 <h5 class="modal-title" id="outingSettingsModalLabel">
-                    <i class="fas fa-clock me-2"></i> Outing Time Settings
+                    <span class="header-ico"><i class="fas fa-clock"></i></span> Outing Time Settings
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="outingSettingsForm" method="POST">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="row justify-content-center g-3">
-                        <div class="col-12 col-md-8">
-                            <label for="curfew_time" class="form-label fw-semibold d-inline-flex align-items-center gap-2">
-                                Curfew / Return Time
-                                <span class="info-tooltip-trigger" tabindex="0" aria-label="Curfew / Return Time help: The mandatory deadline time by which all students must be checked back in for the day (e.g., 22:00)." data-bs-toggle="tooltip" data-bs-placement="top" title="The mandatory deadline time by which all students must be checked back in for the day (e.g., 22:00).">
-                                    <i class="fas fa-circle-info"></i>
-                                </span>
-                            </label>
-                            <input type="time" id="curfew_time" name="curfew_time" class="form-control form-control-lg" required>
-                        </div>
+                    <label for="curfew_time" class="form-label d-inline-flex align-items-center gap-2">
+                        Curfew / Return Time
+                        <span class="info-tooltip-trigger" tabindex="0" aria-label="Curfew / Return Time help: The mandatory deadline time by which all students must be checked back in for the day (e.g., 22:00)." data-bs-toggle="tooltip" data-bs-placement="top" title="The mandatory deadline time by which all students must be checked back in for the day (e.g., 22:00).">
+                            <i class="fas fa-circle-info"></i>
+                        </span>
+                    </label>
+                    <div class="scan-field curfew-field">
+                        <i class="fas fa-moon scan-ico"></i>
+                        <input type="time" id="curfew_time" name="curfew_time" class="form-control" required>
                     </div>
-                    <div class="mt-3 text-muted small text-center">
-                        Default: 10:00 PM (Thu-Sat) | 7:00 PM (Sun-Wed)
+                    <div class="default-times">
+                        <div><span class="status-pill info">Thu - Sat</span><strong>10:00 PM</strong></div>
+                        <div><span class="status-pill neutral">Sun - Wed</span><strong>7:00 PM</strong></div>
                     </div>
+                    <p class="text-muted small mb-0 mt-2"><i class="fas fa-circle-info me-1"></i>These are the defaults when no curfew is saved.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Save Settings</button>
                 </div>
             </form>
         </div>
@@ -196,12 +205,23 @@ function cleanupOutingSettingsModal() {
 }
 
 function showOutingSettingsToast(message, isError = false) {
+    // Uses the same corner toast as the page messages
+    let stack = document.getElementById('toastStack');
+    if (!stack) {
+        stack = document.createElement('div');
+        stack.className = 'toast-stack';
+        stack.id = 'toastStack';
+        document.body.appendChild(stack);
+    }
     const toast = document.createElement('div');
-    toast.className = `alert ${isError ? 'alert-danger' : 'alert-success'} position-fixed top-0 end-0 m-3 shadow`;
+    toast.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
     toast.setAttribute('role', 'alert');
-    toast.style.zIndex = '1100';
-    toast.textContent = message;
-    document.body.appendChild(toast);
+    const icon = document.createElement('i');
+    icon.className = `fas ${isError ? 'fa-circle-xmark' : 'fa-circle-check'}`;
+    const text = document.createElement('span');
+    text.textContent = message;
+    toast.append(icon, text);
+    stack.appendChild(toast);
     setTimeout(() => toast.remove(), 3500);
 }
 
