@@ -142,9 +142,30 @@
 
     </div>
 </div>
+
+<!-- Submit confirmation -->
+<div class="modal fade" id="submitConfirmModal" tabindex="-1" aria-labelledby="submitConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm-wide">
+        <div class="modal-content">
+            <div class="modal-body text-center confirm-body">
+                <span class="confirm-ico"><i class="fas fa-paper-plane"></i></span>
+                <h5 class="modal-title justify-content-center" id="submitConfirmLabel">Submit home leave request?</h5>
+                <p class="text-muted mb-0">
+                    Leave: <strong id="confirmLeave"></strong><br>
+                    Return: <strong id="confirmReturn"></strong>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmSubmitBtn"><i class="fas fa-paper-plane"></i> Yes, submit</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('permitForm');
@@ -240,17 +261,27 @@ document.addEventListener('DOMContentLoaded', function () {
         matric.focus();
     });
 
-    // Never submit the permit before the identity check has passed
+    // Never submit the permit before the identity check has passed,
+    // then ask for confirmation in the app's own popup instead of the browser one
+    const confirmEl = document.getElementById('submitConfirmModal');
+    let confirmed = false;
     form.addEventListener('submit', e => {
         if (!verified) { e.preventDefault(); verify(); return; }
+        if (confirmed) return;
+        e.preventDefault();
         const leave = new Date(outingDate.value + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
         const back = new Date(returnDate.value + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
         const time = hourSel.value + ':' + minSel.selectedOptions[0].text + ' ' + periodSel.value;
-        if (!confirm('Submit home leave request?\n\nLeave: ' + leave + ', ' + time + '\nReturn: ' + back)) {
-            e.preventDefault();
-        }
+        document.getElementById('confirmLeave').textContent = leave + ', ' + time;
+        document.getElementById('confirmReturn').textContent = back;
+        bootstrap.Modal.getOrCreateInstance(confirmEl).show();
     });
-
+    document.getElementById('confirmSubmitBtn').addEventListener('click', () => {
+        confirmed = true;
+        bootstrap.Modal.getOrCreateInstance(confirmEl).hide();
+        form.requestSubmit();
+    });
+    
     // Leave date can't be in the past; return date must be after the leave date
     const today = new Date();
     outingDate.min = isoDate(today);

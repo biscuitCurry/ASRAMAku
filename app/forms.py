@@ -131,9 +131,10 @@ from .models import StaffProfile
 class StaffProfileForm(forms.ModelForm):
     class Meta:
         model = StaffProfile
-        fields = ["profile_picture", "phone_number", "tvetmara_email"]
+        fields = ["profile_picture", "phone_number", "tvetmara_email", "email_notifications"]
         widgets = {
             "profile_picture": forms.ClearableFileInput(attrs={"class": "form-control"}),
             "phone_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "Phone Number"}),
             "tvetmara_email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "TVETMARA Email"}),
-        }
+            "email_notifications": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            }     

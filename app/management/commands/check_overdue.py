@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from app.models import CheckLog
+from app.notifications import warden_emails
 from app.pdf_utils import build_warning_letter_pdf
 
 
@@ -41,7 +42,11 @@ class Command(BaseCommand):
             pdf_buffer = build_warning_letter_pdf(student, out_time, deadline, now)
             filename = f"warning_{student.student_id}_{now:%Y%m%d%H%M}.pdf"
 
-            recipients = [e for e in [student.tvetmara_email, settings.WARDEN_EMAIL] if e]
+            recipients = []
+            for e in [student.tvetmara_email, settings.WARDEN_EMAIL, *warden_emails()]:
+                if e and e.lower() not in (r.lower() for r in recipients):
+                    recipients.append(e)
+
             sent_any = False
             if recipients:
                 try:

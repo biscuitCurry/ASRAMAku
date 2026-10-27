@@ -125,6 +125,22 @@
 
 </div>
 
+<!-- Nothing selected -->
+<div class="modal fade" id="noSelectionModal" tabindex="-1" aria-labelledby="noSelectionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm-wide">
+        <div class="modal-content">
+            <div class="modal-body text-center confirm-body">
+                <span class="confirm-ico"><i class="fas fa-list-check"></i></span>
+                <h5 class="modal-title justify-content-center" id="noSelectionLabel">No request selected</h5>
+                <p class="text-muted mb-0">Tick at least one request first, then press Apply Action.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Select all checkbox
 document.getElementById('selectAll').addEventListener('change', function() {
@@ -156,7 +172,7 @@ document.getElementById('bulkForm').addEventListener('submit', function(e) {
     const checkboxes = document.querySelectorAll('.request-checkbox:checked');
     if (checkboxes.length === 0) {
         e.preventDefault();
-        alert('Please select at least one request.');
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('noSelectionModal')).show();
         return false;
     }
 });

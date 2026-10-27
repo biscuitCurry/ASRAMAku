@@ -17,6 +17,7 @@ from django.views.decorators.http import require_http_methods
 
 from .forms import StaffProfileForm, StudentForm
 from .models import CheckLog, OutingRequest, OutingTimeSettings, StaffProfile, Student
+from .notifications import notify_wardens
 from .pdf_utils import build_decision_letter_pdf
 
 DASHBOARD_EVENT_SUBSCRIBERS = []
@@ -428,6 +429,12 @@ def dashboard(request):
 
                 if log.is_late:
                     deadline = timezone.localtime(log.return_deadline())
+                    notify_wardens(
+                        f"Late return: {student.name}",
+                        f"{student.name} ({student.student_id}) checked in late at "
+                        f"{timezone.localtime(log.check_in_time):%d %b %Y, %I:%M %p}.\n"
+                        f"Deadline was {deadline:%d %b %Y, %I:%M %p}.\n\n- ASRAMAku",
+                    )
                     messages.warning(
                         request,
                         f"Late check-in notice: {student.name} returned after the {deadline:%d %b, %I:%M %p} deadline.",
@@ -699,6 +706,22 @@ def permit_page(request, redirect_name):
             status="Pending",
         )
         broadcast_dashboard_update()
+        notify_wardens(
+            f"New home leave request from {student.name}",
+            "\n".join([
+                f"You have received a new home leave request from {student.name} ({student.student_id}).",
+                "",
+                f"Course: {student.course}",
+                f"Destination: {destination}",
+                f"Reason: {reason}",
+                f"Leaving: {start:%d %b %Y} at {outing_time}",
+                f"Returning: {end:%d %b %Y} (by curfew)",
+                "",
+                "Log in to ASRAMAku and open Requests to approve or reject it.",
+                "",
+                "- ASRAMAku",
+            ]),
+        )
         messages.success(request, "Home leave request submitted. You'll get an email once the warden decides.")
         return redirect(redirect_name)
 

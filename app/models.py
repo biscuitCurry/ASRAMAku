@@ -169,6 +169,11 @@ class StaffProfile(models.Model):
         "Phone Number", max_length=20, blank=True, null=True
     )
     tvetmara_email = models.EmailField("TVETMARA E-MAIL", blank=True, null=True)
+    email_notifications = models.BooleanField(
+        "Email me notifications",
+        default=True,
+        help_text="Send new home leave requests and late returns to the email above.",
+    )
 
     def __str__(self):
         return self.user.username
