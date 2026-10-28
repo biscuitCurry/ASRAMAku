@@ -19,6 +19,8 @@ urlpatterns = [
     path("students/add/", views.add_student, name="add_student"),
     path("students/edit/<int:pk>/", views.edit_student, name="edit_student"),
     path("students/delete/<int:pk>/", views.delete_student, name="delete_student"),
+    path("students/ban/<int:pk>/", views.ban_student, name="ban_student"),
+    path("students/lift-ban/<int:pk>/", views.lift_ban, name="lift_ban"),
     # ==========================================
     # Outing Request Management
     # ==========================================

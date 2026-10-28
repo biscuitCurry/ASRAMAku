@@ -1,6 +1,7 @@
 import io
 from xml.sax.saxutils import escape
 
+from django.utils import timezone
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -18,6 +19,7 @@ THEMES = {
     "approved": {"accent": colors.HexColor("#1dbf73"), "soft": colors.HexColor("#eafaf3"), "text": colors.HexColor("#0a7d50")},
     "rejected": {"accent": colors.HexColor("#e74c3c"), "soft": colors.HexColor("#fff1f0"), "text": colors.HexColor("#a93a2d")},
     "warning": {"accent": colors.HexColor("#f39c12"), "soft": colors.HexColor("#fff7e8"), "text": colors.HexColor("#9d6802")},
+    "ban": {"accent": RED, "soft": colors.HexColor("#fff1f0"), "text": NAVY},
 }
 
 PAGE_W, PAGE_H = A4
@@ -216,5 +218,37 @@ def build_warning_letter_pdf(student, out_time, deadline, now):
         _p("1. Return to the hostel immediately and scan your ID card / RFID at the entrance."),
         _p("2. Report to the hostel warden upon arrival."),
         _p("Repeated late returns may result in further disciplinary action in accordance with hostel regulations.", "small"),
+    ]
+    return _build(story, ref_no, f"Issued {now:%d %B %Y, %I:%M %p}")
+
+def build_ban_letter_pdf(ban, now):
+    """Ban letter for a student. Returns a BytesIO."""
+    student = ban.student
+    ref_no = f"ASR/BAN/{ban.id:05d}"
+    t = THEMES["ban"]
+    starts = timezone.localtime(ban.starts_at)
+    ends = f"{timezone.localtime(ban.ends_at):%d %B %Y, %I:%M %p}" if ban.ends_at else "Until lifted by the warden"
+    warden = (ban.banned_by.get_full_name() or ban.banned_by.username) if ban.banned_by else "Hostel warden"
+
+    story = [
+        _p(f"Dear <b>{_safe(student.name.title())}</b>,"),
+        Spacer(1, 8),
+        _banner("OUTING BAN NOTICE", "Official notice: outing and home leave privileges suspended", "ban"),
+        Spacer(1, 6),
+        _p("The hostel warden has <b>banned</b> you from leaving the hostel for the period stated below. "
+           "During this period you cannot check out at the hostel entrance or submit a home leave request."),
+        _p("Student Details", "heading"),
+        _info_table(_student_rows(student)),
+        _p("Ban Details", "heading"),
+        _info_table([
+            ("Reason", ban.reason),
+            ("Ban starts", f"{starts:%d %B %Y, %I:%M %p}"),
+            ("Ban ends", ends),
+            ("Issued by", warden),
+        ], label_bg=t["soft"], label_color=t["text"]),
+        _p("Please Note", "heading"),
+        _p("1. Your privileges return automatically when the ban ends. No action is needed from you."),
+        _p("2. If you are outside the hostel now, you can still scan back in as usual."),
+        _p("3. Contact the hostel warden if you believe this ban was issued in error."),
     ]
     return _build(story, ref_no, f"Issued {now:%d %B %Y, %I:%M %p}")

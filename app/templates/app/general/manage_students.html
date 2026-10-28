@@ -43,13 +43,14 @@
                         <th>Course</th>
                         <th>Session</th>
                         <th>Status</th>
+                        <th>Late (30 days)</th>
                         <th>Presence</th>
                         <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="studentRows">
                     {% for student in students %}
-                    <tr class="student-row" data-presence="{% if student.presence_status == 'In' %}in{% else %}out{% endif %}" data-banned="{% if student.status == 'Banned' %}1{% else %}0{% endif %}">
+                    <tr class="student-row" data-presence="{% if student.presence_status == 'In' %}in{% else %}out{% endif %}" data-banned="{% if student.active_ban %}1{% else %}0{% endif %}">
                         <td>
                             <div class="person">
                                 {% if student.profile_picture %}
@@ -66,18 +67,27 @@
                         <td data-label="Course">{{ student.course }}</td>
                         <td data-label="Session"><span class="text-muted">{{ student.session }}</span></td>
                         <td data-label="Status">
-                            {% if student.status == "Approved" %}
+                            {% if student.active_ban %}
+                                <span class="status-pill dark" title="{{ student.active_ban.reason }}">Banned</span>
+                                <div class="meta small text-muted">{% if student.active_ban.ends_at %}until {{ student.active_ban.ends_at|date:"d M, h:i A" }}{% else %}until lifted{% endif %}</div>
+                            {% elif student.status == "Approved" %}
                                 <span class="status-pill success">Approved</span>
                             {% elif student.status == "Rejected" %}
                                 <span class="status-pill danger">Rejected</span>
-                            {% elif student.status == "Banned" %}
-                                <span class="status-pill dark">Banned</span>
                             {% else %}
                                 <span class="status-pill neutral">None</span>
                             {% endif %}
                         </td>
-                        <td data-label="Presence">
-                            {% if student.presence_status == "In" %}
+                        <td data-label="Late (30 days)">
+                            {% if student.recent_lates >= 3 %}
+                                <span class="status-pill danger" title="3 or more late returns in 30 days"><i class="fas fa-triangle-exclamation"></i>{{ student.recent_lates }}</span>
+                            {% elif student.recent_lates %}
+                                <span class="status-pill warning">{{ student.recent_lates }}</span>
+                            {% else %}
+                                <span class="text-muted">0</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Presence">                            {% if student.presence_status == "In" %}
                                 <span class="status-pill info"><i class="fas fa-house"></i>In</span>
                             {% else %}
                                 <span class="status-pill warning"><i class="fas fa-person-walking"></i>Out</span>
@@ -88,6 +98,9 @@
                                 <a href="{% url 'edit_student' student.pk %}" class="btn btn-sm btn-soft-primary" title="Edit">
                                     <i class="fas fa-pen"></i><span class="d-none d-xl-inline">Edit</span>
                                 </a>
+                                <a href="{% url 'edit_student' student.pk %}#ban" class="btn btn-sm btn-soft-danger" title="{% if student.active_ban %}Lift ban{% else %}Ban{% endif %}">
+                                    <i class="fas {% if student.active_ban %}fa-unlock{% else %}fa-ban{% endif %}"></i><span class="d-none d-xl-inline">{% if student.active_ban %}Lift ban{% else %}Ban{% endif %}</span>
+                                </a>
                                 <a href="{% url 'delete_student' student.pk %}" class="btn btn-sm btn-soft-danger" title="Delete">
                                     <i class="fas fa-trash-can"></i><span class="d-none d-xl-inline">Delete</span>
                                 </a>
@@ -96,7 +109,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="empty-state">
+                        <td colspan="7" class="empty-state">
                             <i class="fas fa-user-graduate"></i>
                             No students found
                             <div class="mt-3"><a href="{% url 'add_student' %}" class="btn btn-success btn-sm"><i class="fas fa-user-plus"></i> Add the first student</a></div>
@@ -104,7 +117,7 @@
                     </tr>
                     {% endfor %}
                     <tr id="noMatchRow" style="display:none">
-                        <td colspan="6" class="empty-state"><i class="fas fa-magnifying-glass"></i>No students match this filter.</td>
+                        <td colspan="7" class="empty-state"><i class="fas fa-magnifying-glass"></i>No students match this filter.</td>
                     </tr>
                 </tbody>
             </table>

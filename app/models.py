@@ -72,7 +72,6 @@ class Student(models.Model):
             ("None", "None"),
             ("Approved", "Approved"),
             ("Rejected", "Rejected"),
-            ("Banned", "Banned"),
         ],
         default="None",
     )
@@ -92,8 +91,57 @@ class Student(models.Model):
             self.name = self.name.upper()
         super().save(*args, **kwargs)
 
+    @property
+    def active_ban(self):
+        """The ban in force right now, or None. A ban past its end date simply stops counting."""
+        if not hasattr(self, "_active_ban"):
+            self._active_ban = Ban.objects.active().filter(student=self).first()
+        return self._active_ban
+
+    def late_count(self, days=30):
+        """Late returns in the last `days` days."""
+        since = timezone.now() - datetime.timedelta(days=days)
+        return self.check_logs.filter(is_late=True, check_in_time__gte=since).count()
+
     def __str__(self):
         return self.name
+
+
+class BanQuerySet(models.QuerySet):
+    def active(self):
+        now = timezone.now()
+        return self.filter(lifted_at__isnull=True, starts_at__lte=now).filter(
+            models.Q(ends_at__isnull=True) | models.Q(ends_at__gt=now)
+        )
+
+
+class Ban(models.Model):
+    """One ban on a student. Kept forever as history; it ends at ends_at or when lifted."""
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="bans")
+    reason = models.TextField()
+    starts_at = models.DateTimeField(default=timezone.now)
+    ends_at = models.DateTimeField(null=True, blank=True, help_text="Leave empty to ban until lifted by hand.")
+    banned_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="bans_given"
+    )
+    lifted_at = models.DateTimeField(null=True, blank=True)
+    lifted_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="bans_lifted"
+    )
+
+    objects = BanQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["-starts_at"]
+
+    @property
+    def is_active(self):
+        now = timezone.now()
+        return self.lifted_at is None and self.starts_at <= now and (self.ends_at is None or self.ends_at > now)
+
+    def __str__(self):
+        return f"{self.student.name} ban from {self.starts_at:%d %b %Y}"
 
 
 class CheckLog(models.Model):
