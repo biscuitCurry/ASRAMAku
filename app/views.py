@@ -9,7 +9,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.mail import send_mail, EmailMessage
 from django.db import ProgrammingError
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Value
+from django.db.models.functions import Replace
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -750,19 +751,30 @@ def lift_ban(request, pk):
 # -------------------------
 
 def verify_student_identity(student_id, id_card=None):
-    """Look a student up by matric ID only (IC check removed)."""
-    matric = str(student_id or "").strip()
-    if not matric:
+    """Look a student up by matric ID, or by IC number if they forgot their matric ID."""
+    value = str(student_id or "").strip()
+    if not value:
         return None
-    return Student.objects.filter(student_id__iexact=matric).first()
-
+    student = Student.objects.filter(student_id__iexact=value).first()
+    if student:
+        return student
+    # IC fallback: ignore dashes and spaces on both sides
+    ic = value.replace("-", "").replace(" ", "")
+    if not ic:
+        return None
+    return (
+        Student.objects
+        .annotate(ic_clean=Replace(Replace("id_card", Value("-"), Value("")), Value(" "), Value("")))
+        .filter(ic_clean=ic)
+        .first()
+    )
 
 @require_http_methods(["POST"])
 def verify_student(request):
     """Student portal step 1: check matric ID + IC, return profile and recent requests."""
     student = verify_student_identity(request.POST.get("student_id"), request.POST.get("id_card"))
     if student is None:
-        return JsonResponse({"error": "Matric ID not found. Please check and try again."}, status=404)
+        return JsonResponse({"error": "Matric ID or IC number not found. Please check and try again."}, status=404)
     ban = student.active_ban
     if ban:
         return JsonResponse({"error": f"You are banned from home leave until {ban_end_text(ban)}. Reason: {ban.reason}"}, status=403)
@@ -789,7 +801,7 @@ def permit_page(request, redirect_name):
     if request.method == "POST":
         student = verify_student_identity(request.POST.get("student_id"), request.POST.get("id_card"))
         if student is None:
-            messages.error(request, "Matric ID and IC number do not match our records.")
+            messages.error(request, "Matric ID or IC number not found in our records.")
             return redirect(redirect_name)
         ban = student.active_ban
         if ban:

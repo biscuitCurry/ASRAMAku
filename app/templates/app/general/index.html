@@ -41,13 +41,13 @@
 
                     <!-- Step 1: identity -->
                     <div class="mb-3">
-                        <label for="matricId" class="form-label">Matric ID</label>
+                        <label for="matricId" class="form-label">Matric ID or IC Number</label>
                         <div class="scan-field">
                             <i class="fas fa-id-badge scan-ico"></i>
-                            <input type="text" id="matricId" name="student_id" class="form-control" placeholder="e.g. 333421254940" autocomplete="off" required autofocus>
+                            <input type="text" id="matricId" name="student_id" class="form-control" placeholder="e.g. 33342125xxxx" autocomplete="off" required autofocus>
                         </div>
+                    <div class="form-text">Forgot your matric ID? Enter your IC number instead.</div>
                     </div>
-
                     <div id="verifyError" class="alert alert-danger py-2 d-none" role="alert"></div>
 
                     <div id="verifyActions" class="d-flex gap-2">
@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function verify() {
         verifyError.classList.add('d-none');
         if (!matric.value.trim()) {
-            verifyError.textContent = 'Enter your matric ID.';
+            verifyError.textContent = 'Enter your matric ID or IC Number.';
             verifyError.classList.remove('d-none');
             return;
         }
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function () {
         bootstrap.Modal.getOrCreateInstance(confirmEl).hide();
         form.requestSubmit();
     });
-    
+
     // Leave date can't be in the past; return date must be after the leave date
     const today = new Date();
     outingDate.min = isoDate(today);
