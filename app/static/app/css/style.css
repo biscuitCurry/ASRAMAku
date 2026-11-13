@@ -1186,3 +1186,9 @@ html.pwa-launch .app-splash {
     .date-nav .input-group-text { display: none; }
     .date-nav .input-group .form-control { border-radius: 10px !important; padding-left: 10px; padding-right: 8px; }
 }
+
+/* Language switch (BM / EN) in the top bar and on the login page */
+.lang-toggle { width: auto; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.03em; }
+.lang-toggle i { font-size: 1rem; }
+.auth-panel { position: relative; }
+.auth-lang { position: absolute; top: 18px; right: 18px; height: 38px; }

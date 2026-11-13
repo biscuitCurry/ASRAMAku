@@ -27,7 +27,7 @@
                     <button type="button" class="active" data-filter="all">All <span class="chip-count" id="countAll"></span></button>
                     <button type="button" data-filter="in">In <span class="chip-count" id="countIn"></span></button>
                     <button type="button" data-filter="out">Out <span class="chip-count" id="countOut"></span></button>
-                    <button type="button" data-filter="banned">Banned <span class="chip-count" id="countBanned"></span></button>
+                    <button type="button" data-filter="banned">Suspended <span class="chip-count" id="countBanned"></span></button>
                 </div>
                 <div class="search-box">
                     <i class="fas fa-magnifying-glass"></i>
@@ -68,7 +68,7 @@
                         <td data-label="Session"><span class="text-muted">{{ student.session }}</span></td>
                         <td data-label="Status">
                             {% if student.active_ban %}
-                                <span class="status-pill dark" title="{{ student.active_ban.reason }}">Banned</span>
+                                <span class="status-pill dark" title="{{ student.active_ban.reason }}">Suspended</span>
                                 <div class="meta small text-muted">{% if student.active_ban.ends_at %}until {{ student.active_ban.ends_at|date:"d M, h:i A" }}{% else %}until lifted{% endif %}</div>
                             {% elif student.status == "Approved" %}
                                 <span class="status-pill success">Approved</span>
@@ -99,7 +99,7 @@
                                     <i class="fas fa-pen"></i><span class="d-none d-xl-inline">Edit</span>
                                 </a>
                                 <a href="{% url 'edit_student' student.pk %}#ban" class="btn btn-sm btn-soft-danger" title="{% if student.active_ban %}Lift ban{% else %}Ban{% endif %}">
-                                    <i class="fas {% if student.active_ban %}fa-unlock{% else %}fa-ban{% endif %}"></i><span class="d-none d-xl-inline">{% if student.active_ban %}Lift ban{% else %}Ban{% endif %}</span>
+                                    <i class="fas {% if student.active_ban %}fa-unlock{% else %}fa-ban{% endif %}"></i><span class="d-none d-xl-inline">{% if student.active_ban %}Lift Suspension{% else %}Suspend{% endif %}</span>
                                 </a>
                                 <a href="{% url 'delete_student' student.pk %}" class="btn btn-sm btn-soft-danger" title="Delete">
                                     <i class="fas fa-trash-can"></i><span class="d-none d-xl-inline">Delete</span>

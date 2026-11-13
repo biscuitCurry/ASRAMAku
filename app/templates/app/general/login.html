@@ -16,10 +16,14 @@
         <p>The hostel outing system for TVETMARA Sungai Petani. Scan cards at the entrance, approve home leave, and catch late returns as they happen.</p>
         <div class="auth-feature"><i class="fas fa-id-card"></i> RFID check in and check out at the guard post</div>
         <div class="auth-feature"><i class="fas fa-file-signature"></i> Home leave requests approved in one click</div>
-        <div class="auth-feature"><i class="fas fa-clock-rotate-left"></i> Late returns flagged against the curfew</div>
+        <div class="auth-feature"><i class="fas fa-clock-rotate-left"></i> Late returns flagged against the outing return time</div>
     </div>
 
     <div class="auth-panel">
+        <!-- Language switch (the login page has no top bar) -->
+        <button type="button" class="nav-icon-btn lang-toggle auth-lang" data-lang-toggle title="Tukar ke Bahasa Melayu" aria-label="Tukar ke Bahasa Melayu">
+            <i class="fas fa-language"></i><span class="lang-code" data-lang-label>BM</span>
+        </button>
         <div class="auth-box">
             <a href="{% url 'index' %}"><img class="auth-mobile-logo" src="{% static 'app/img/asramaku_logo_wide.png' %}" alt="ASRAMAku"></a>
 

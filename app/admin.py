@@ -12,14 +12,14 @@ def disapprove_exit(modeladmin, request, queryset):
     queryset.update(status="Rejected")
 
 
-@admin.action(description="Ban selected students (until lifted)")
+@admin.action(description="Suspend selected students (until lifted)")
 def ban_students(modeladmin, request, queryset):
     banned = 0
     for student in queryset:
         if not student.active_ban:
-            Ban.objects.create(student=student, reason="Banned from the admin site.", banned_by=request.user)
+            Ban.objects.create(student=student, reason="Suspended from the admin site.", banned_by=request.user)
             banned += 1
-    modeladmin.message_user(request, f"Banned {banned} student(s). Set an end date or lift it under Bans.")
+    modeladmin.message_user(request, f"Suspended {banned} student(s). Set an end date or lift it under Bans.")
 
 @admin.action(description="Delete selected log entries permanently")
 def delete_logs(modeladmin, request, queryset):

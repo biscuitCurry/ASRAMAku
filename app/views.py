@@ -210,7 +210,7 @@ def notify_student_decision(req, justification=""):
         f"Destination: {req.destination}",
         f"Purpose: {req.reason}",
         f"Type: {req.request_type}",
-        f"Return by: {req.return_date:%d %b %Y} (by curfew)" if req.return_date else "Return by: same day, by curfew",
+        f"Return by: {req.return_date:%d %b %Y} (by the outing return time)" if req.return_date else "Return by: same day, by the outing return time",
         f"Date: {req.outing_date}  Time: {req.outing_time}",
     ]
     if req.status == "Rejected" and justification:
@@ -232,11 +232,11 @@ def notify_student_decision(req, justification=""):
         return False
 
 def ban_end_text(ban):
-    return f"{timezone.localtime(ban.ends_at):%d %b %Y, %I:%M %p}" if ban.ends_at else "it is lifted by the warden"
+    return f"{timezone.localtime(ban.ends_at):%d %b %Y, %I:%M %p}" if ban.ends_at else "the warden lifts it"
 
 
 def notify_student_ban(ban):
-    """Email the student their ban letter as a PDF. Never breaks the ban flow."""
+    """Email the student their suspension letter as a PDF. Never breaks the suspension flow."""
     email = ban.student.tvetmara_email
     if not email:
         return False
@@ -244,25 +244,25 @@ def notify_student_ban(ban):
     lines = [
         f"Hi {ban.student.name.title()},",
         "",
-        "You have been banned from leaving the hostel (outings and home leave).",
+        "You have been suspended from leaving the hostel (outings and home leave).",
         f"Reason: {ban.reason}",
-        f"Banned until: {ban_end_text(ban)}",
+        f"Suspended until: {ban_end_text(ban)}",
         "",
-        "Your official ban letter is attached as a PDF.",
+        "Your official suspension letter is attached as a PDF.",
         "",
         "- ASRAMAku",
     ]
     try:
-        msg = EmailMessage("Outing ban notice", "\n".join(lines), None, [email])
+        msg = EmailMessage("Outing suspension notice", "\n".join(lines), None, [email])
         try:
             pdf = build_ban_letter_pdf(ban, timezone.localtime(timezone.now()))
-            msg.attach(f"ban_letter_{ban.id}.pdf", pdf.getvalue(), "application/pdf")
+            msg.attach(f"suspension_letter_{ban.id}.pdf", pdf.getvalue(), "application/pdf")
         except Exception:
-            logger.exception("Failed to build ban letter PDF for ban %s", ban.id)  # still send the email
+            logger.exception("Failed to build suspension letter PDF for ban %s", ban.id)  # still send the email
         msg.send()
         return True
     except Exception:
-        logger.exception("Failed to send ban email to %s", email)
+        logger.exception("Failed to send suspension email to %s", email)
         return False
 
 
@@ -368,7 +368,7 @@ def outing_time_settings_view(request):
             curfew_time = get_request_value(request, "curfew_time", "curfewTime")
 
             if not curfew_time:
-                raise ValueError("Curfew time is required.")
+                raise ValueError("Return time is required.")
 
             datetime.datetime.strptime(str(curfew_time), "%H:%M")
 
@@ -429,7 +429,7 @@ def dashboard(request):
                 # A banned student can't leave, but can always scan back in
                 ban = student.active_ban
                 if ban:
-                    messages.error(request, f"{student.name} is banned until {ban_end_text(ban)}. Reason: {ban.reason}")
+                    messages.error(request, f"{student.name} is suspended until {ban_end_text(ban)}. Reason: {ban.reason}")
                     return redirect("dashboard")
                 student.presence_status = "Out"
                 student.save()
@@ -691,10 +691,10 @@ def ban_student(request, pk):
     now = timezone.now()
 
     if student.active_ban:
-        messages.error(request, f"{student.name} is already banned. Lift that ban first.")
+        messages.error(request, f"{student.name} is already suspended. Lift that suspension first.")
         return redirect("edit_student", pk=pk)
     if not reason:
-        messages.error(request, "Please give a reason for the ban.")
+        messages.error(request, "Please give a reason for the suspension.")
         return redirect("edit_student", pk=pk)
 
     if length == "open":
@@ -705,27 +705,27 @@ def ban_student(request, pk):
         except ValueError:
             until = None
         if until is None or until < timezone.localdate():
-            messages.error(request, "Please pick a ban end date from today onwards.")
+            messages.error(request, "Please pick a suspension end date from today onwards.")
             return redirect("edit_student", pk=pk)
         # Banned for the whole of that day
         ends_at = timezone.make_aware(datetime.datetime.combine(until, datetime.time(23, 59)))
     elif length in ("3", "7", "14", "30"):
         ends_at = now + datetime.timedelta(days=int(length))
     else:
-        messages.error(request, "Please choose how long the ban lasts.")
+        messages.error(request, "Please choose how long the suspension lasts.")
         return redirect("edit_student", pk=pk)
 
     ban = Ban.objects.create(student=student, reason=reason, starts_at=now, ends_at=ends_at, banned_by=request.user)
     emailed = notify_student_ban(ban)
     notify_wardens(
-        f"Student banned: {student.name}",
-        f"{student.name} ({student.student_id}) was banned by {request.user.username} "
+        f"Student suspended: {student.name}",
+        f"{student.name} ({student.student_id}) was suspended by {request.user.username} "
         f"until {ban_end_text(ban)}.\nReason: {reason}\n\n- ASRAMAku",
     )
     messages.success(
         request,
-        f"{student.name} is banned until {ban_end_text(ban)}."
-        + (" Ban letter emailed." if emailed else " (No email sent: the student has no email.)"),
+        f"{student.name} is suspended until {ban_end_text(ban)}."
+        + (" Suspension letter emailed." if emailed else " No email sent: the student has no email."),
     )
     return redirect("edit_student", pk=pk)
 
@@ -734,16 +734,16 @@ def ban_student(request, pk):
 @user_passes_test(lambda u: u.is_staff)
 @require_http_methods(["POST"])
 def lift_ban(request, pk):
-    """End a student's current ban early."""
+    """End a student's current suspension early."""
     student = get_object_or_404(Student, pk=pk)
     ban = student.active_ban
     if ban is None:
-        messages.info(request, f"{student.name} is not banned.")
+        messages.info(request, f"{student.name} is not suspended.")
     else:
         ban.lifted_at = timezone.now()
         ban.lifted_by = request.user
         ban.save(update_fields=["lifted_at", "lifted_by"])
-        messages.success(request, f"Ban on {student.name} lifted.")
+        messages.success(request, f"Suspension on {student.name} has been lifted.")
     return redirect("edit_student", pk=pk)
 
 # -------------------------
@@ -756,6 +756,10 @@ def verify_student_identity(student_id, id_card=None):
     if not value:
         return None
     student = Student.objects.filter(student_id__iexact=value).first()
+    if student:
+        return student
+    # RFID card: the USB reader types the card UID into the same box
+    student = Student.objects.filter(rfid_uid__iexact=value).first()
     if student:
         return student
     # IC fallback: ignore dashes and spaces on both sides
@@ -774,10 +778,10 @@ def verify_student(request):
     """Student portal step 1: check matric ID + IC, return profile and recent requests."""
     student = verify_student_identity(request.POST.get("student_id"), request.POST.get("id_card"))
     if student is None:
-        return JsonResponse({"error": "Matric ID or IC number not found. Please check and try again."}, status=404)
+        return JsonResponse({"error": "Matric ID, IC number or card not found. Please check and try again."}, status=404)
     ban = student.active_ban
     if ban:
-        return JsonResponse({"error": f"You are banned from home leave until {ban_end_text(ban)}. Reason: {ban.reason}"}, status=403)
+        return JsonResponse({"error": f"You are suspended from home leave until {ban_end_text(ban)}. Reason: {ban.reason}"}, status=403)
 
     recent = student.outing_requests.order_by("-request_time")[:3]
     return JsonResponse({
@@ -801,11 +805,11 @@ def permit_page(request, redirect_name):
     if request.method == "POST":
         student = verify_student_identity(request.POST.get("student_id"), request.POST.get("id_card"))
         if student is None:
-            messages.error(request, "Matric ID or IC number not found in our records.")
+            messages.error(request, "Matric ID, IC number or card not found in our records.")
             return redirect(redirect_name)
         ban = student.active_ban
         if ban:
-            messages.error(request, f"You are banned from home leave until {ban_end_text(ban)}. Reason: {ban.reason}")
+            messages.error(request, f"You are suspended from home leave until {ban_end_text(ban)}. Reason: {ban.reason}")
             return redirect(redirect_name)
         
         destination = (request.POST.get("destination") or "").strip()
@@ -852,7 +856,7 @@ def permit_page(request, redirect_name):
                 f"Destination: {destination}",
                 f"Reason: {reason}",
                 f"Leaving: {start:%d %b %Y} at {outing_time}",
-                f"Returning: {end:%d %b %Y} (by curfew)",
+                f"Returning: {end:%d %b %Y} (by the outing return time)",
                 "",
                 "Log in to ASRAMAku and open Requests to approve or reject it.",
                 "",

@@ -9,7 +9,7 @@
  *
  * Change VERSION whenever you change CSS/JS/images, so every device drops its old copies.
  */
-const VERSION = 'v4';
+const VERSION = 'v5';
 const STATIC_CACHE = 'asramaku-static-' + VERSION;
 const OFFLINE_URL = '/offline/';
 

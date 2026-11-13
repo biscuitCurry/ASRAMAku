@@ -8,6 +8,10 @@
 
             <!-- Bell, account menu and the mobile menu button stay visible on every screen size -->
             <div class="nav-actions order-lg-last">
+                <!-- Language switch: English / Bahasa Melayu (handled by app/js/i18n.js) -->
+                <button type="button" class="nav-icon-btn lang-toggle" data-lang-toggle title="Tukar ke Bahasa Melayu" aria-label="Tukar ke Bahasa Melayu">
+                    <i class="fas fa-language"></i><span class="lang-code" data-lang-label>BM</span>
+                </button>
                 {% if user.is_authenticated %}
                     {% if user.is_staff %}
                     <div class="position-relative" id="notifContainer">
@@ -150,8 +154,8 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <label for="curfew_time" class="form-label d-inline-flex align-items-center gap-2">
-                        Curfew / Return Time
-                        <span class="info-tooltip-trigger" tabindex="0" aria-label="Curfew / Return Time help: The mandatory deadline time by which all students must be checked back in for the day (e.g., 22:00)." data-bs-toggle="tooltip" data-bs-placement="top" title="The mandatory deadline time by which all students must be checked back in for the day (e.g., 22:00).">
+                        Outing Return Time
+                        <span class="info-tooltip-trigger" tabindex="0" aria-label="Outing Return Time help: The latest time all students must be checked back in for the day (e.g., 22:00)." data-bs-toggle="tooltip" data-bs-placement="top" title="The latest time all students must be checked back in for the day (e.g., 22:00).">
                             <i class="fas fa-circle-info"></i>
                         </span>
                     </label>
@@ -163,7 +167,7 @@
                         <div><span class="status-pill info">Thu - Sat</span><strong>10:00 PM</strong></div>
                         <div><span class="status-pill neutral">Sun - Wed</span><strong>7:00 PM</strong></div>
                     </div>
-                    <p class="text-muted small mb-0 mt-2"><i class="fas fa-circle-info me-1"></i>These are the defaults when no curfew is saved.</p>
+                    <p class="text-muted small mb-0 mt-2"><i class="fas fa-circle-info me-1"></i>These are the defaults when no return time is saved.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -282,7 +286,7 @@ if (outingSettingsForm) {
         const curfewValue = formData.get('curfew_time');
 
         if (!curfewValue || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(curfewValue)) {
-            showOutingSettingsToast('Please enter a valid curfew time in HH:MM format.', true);
+            showOutingSettingsToast('Please enter a valid return time in HH:MM format.', true);
             return;
         }
 

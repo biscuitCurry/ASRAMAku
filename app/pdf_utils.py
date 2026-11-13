@@ -1,4 +1,4 @@
-"""PDF letters emailed by ASRAMAku: outing decisions, late-return warnings and bans.
+"""PDF letters emailed by ASRAMAku: outing decisions, late-return warnings and suspensions.
 
 Every public builder returns a BytesIO positioned at 0, ready for
 ``EmailMessage.attach(name, buffer.getvalue(), "application/pdf")``.
@@ -346,7 +346,7 @@ def build_decision_letter_pdf(req, now, justification=""):
             ("Destination", req.destination),
             ("Purpose", req.reason),
             ("Outing date / time", outing_when),
-            ("Return by", f"{_fmt_date(req.return_date)}, by curfew" if req.return_date else "Same day, by curfew"),
+            ("Return by", f"{_fmt_date(req.return_date)}, by the outing return time" if req.return_date else "Same day, by the outing return time"),
             ("Decision", req.status),
         ])),
     ]
@@ -354,7 +354,7 @@ def build_decision_letter_pdf(req, now, justification=""):
     if approved:
         story.append(_section("Conditions", _numbered([
             "Scan your ID card / RFID at the hostel entrance when leaving and returning.",
-            "Return before the hostel curfew. Late returns are recorded and a warning letter is issued automatically.",
+            "Return before the outing return time. Late returns are recorded and a warning letter is issued automatically.",
             "Keep this letter as proof of approval until you have checked back in.",
         ])))
     else:
@@ -384,7 +384,7 @@ def build_warning_letter_pdf(student, out_time, deadline, now):
         Spacer(1, 8),
         _banner("LATE RETURN WARNING", "Official notice: return deadline exceeded", "warning", badge="OVERDUE"),
         Spacer(1, 8),
-        _p("Our records show that you have <b>not returned to the hostel</b> by the required curfew time. "
+        _p("Our records show that you have <b>not returned to the hostel</b> by the required outing return time. "
            "This letter serves as an official warning and a copy has been sent to the hostel warden."),
         _section("Student Details", _info_table(_student_rows(student))),
         _section("Outing Record", _info_table([
@@ -405,7 +405,7 @@ def build_warning_letter_pdf(student, out_time, deadline, now):
 
 
 def build_ban_letter_pdf(ban, now):
-    """Ban letter for a student. Returns a BytesIO."""
+    """Suspension letter for a student. Returns a BytesIO."""
     student = ban.student
     ref_no = f"ASR/BAN/{ban.id:05d}"
     t = THEMES["ban"]
@@ -414,8 +414,8 @@ def build_ban_letter_pdf(ban, now):
 
     rows = [
         ("Reason", ban.reason),
-        ("Ban starts", _fmt_dt(starts)),
-        ("Ban ends", _fmt_dt(ends) if ends else "Until lifted by the warden"),
+        ("Suspension starts", _fmt_dt(starts)),
+        ("Suspension ends", _fmt_dt(ends) if ends else "Until lifted by the warden"),
     ]
     if ends and starts and ends > starts:
         rows.append(("Duration", _duration(ends - starts)))
@@ -424,19 +424,19 @@ def build_ban_letter_pdf(ban, now):
     story = [
         _greeting(student),
         Spacer(1, 8),
-        _banner("OUTING BAN NOTICE", "Official notice: outing and home leave privileges suspended", "ban", badge="BANNED"),
+        _banner("OUTING SUSPENSION NOTICE", "Official notice: outing and home leave privileges suspended", "ban", badge="SUSPENDED"),
         Spacer(1, 8),
-        _p("The hostel warden has <b>banned</b> you from leaving the hostel for the period stated below. "
+        _p("The hostel warden has <b>suspended</b> you from leaving the hostel for the period stated below. "
            "During this period you cannot check out at the hostel entrance or submit a home leave request."),
         _section("Student Details", _info_table(_student_rows(student))),
-        _section("Ban Details", _info_table(rows, label_bg=t["soft"], label_color=t["text"])),
+        _section("Suspension Details", _info_table(rows, label_bg=t["soft"], label_color=t["text"])),
         _section("Please Note", _numbered([
-            "Your privileges return automatically when the ban ends. No action is needed from you."
+            "Your privileges return automatically when the suspension ends. No action is needed from you."
             if ends else
-            "Your privileges return when the warden lifts the ban. You will be able to check out again after that.",
+            "Your privileges return when the warden lifts the suspension. You will be able to check out again after that.",
             "If you are outside the hostel now, you can still scan back in as usual.",
-            "Contact the hostel warden if you believe this ban was issued in error.",
+            "Contact the hostel warden if you believe this suspension was issued in error.",
         ])),
         _sign_off(),
     ]
-    return _build(story, ref_no, now, "Outing ban notice")
+    return _build(story, ref_no, now, "Outing suspension notice")

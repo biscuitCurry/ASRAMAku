@@ -41,14 +41,13 @@
 
                     <!-- Step 1: identity -->
                     <div class="mb-3">
-                        <label for="matricId" class="form-label">Matric ID or IC Number</label>
+                        <label for="matricId" class="form-label">Matric ID, IC Number or RFID card</label>
                         <div class="scan-field">
                             <i class="fas fa-id-badge scan-ico"></i>
                             <input type="text" id="matricId" name="student_id" class="form-control" placeholder="e.g. 33342125xxxx" autocomplete="off" required autofocus>
                         </div>
                     <div class="form-text">Forgot your matric ID? Enter your IC number instead.</div>
                     </div>
-                    <div id="verifyError" class="alert alert-danger py-2 d-none" role="alert"></div>
 
                     <div id="verifyActions" class="d-flex gap-2">
                         <button type="button" id="verifyBtn" class="btn btn-primary btn-lg">
@@ -143,6 +142,22 @@
     </div>
 </div>
 
+<!-- Verify error popup -->
+<div class="modal fade" id="verifyErrorModal" tabindex="-1" aria-labelledby="verifyErrorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm-wide">
+        <div class="modal-content">
+            <div class="modal-body text-center confirm-body">
+                <span class="confirm-ico"><i class="fas fa-user-xmark"></i></span>
+                <h5 class="modal-title justify-content-center" id="verifyErrorLabel">No record found</h5>
+                <p class="text-muted mb-0" id="verifyErrorText"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Submit confirmation -->
 <div class="modal fade" id="submitConfirmModal" tabindex="-1" aria-labelledby="submitConfirmLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm-wide">
@@ -171,7 +186,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('permitForm');
     const matric = document.getElementById('matricId');
     const verifyBtn = document.getElementById('verifyBtn');
-    const verifyError = document.getElementById('verifyError');
+    const verifyErrorEl = document.getElementById('verifyErrorModal');
+    let verifyErrorTimer = null;
+
+    // Error popup. Closes by itself after 3 seconds so the next card can be waved,
+    // then puts the cursor back in the box.
+    function showVerifyError(title, text) {
+        document.getElementById('verifyErrorLabel').textContent = title;
+        document.getElementById('verifyErrorText').textContent = text;
+        const popup = bootstrap.Modal.getOrCreateInstance(verifyErrorEl);
+        popup.show();
+        clearTimeout(verifyErrorTimer);
+        verifyErrorTimer = setTimeout(() => popup.hide(), 3000);
+    }
+    verifyErrorEl.addEventListener('hidden.bs.modal', () => {
+        clearTimeout(verifyErrorTimer);
+        matric.focus();
+    });
     const verifyActions = document.getElementById('verifyActions');
     const fields = document.getElementById('permitFields');
     const cardTitle = document.getElementById('cardTitle');
@@ -227,10 +258,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function verify() {
-        verifyError.classList.add('d-none');
         if (!matric.value.trim()) {
-            verifyError.textContent = 'Enter your matric ID or IC Number.';
-            verifyError.classList.remove('d-none');
+            showVerifyError('Nothing entered', 'Enter your matric ID or IC number, or wave your card.');
             return;
         }
         verifyBtn.disabled = true;
@@ -239,15 +268,20 @@ document.addEventListener('DOMContentLoaded', function () {
         body.append('csrfmiddlewaretoken', form.querySelector('[name=csrfmiddlewaretoken]').value);
 
         fetch('{% url "verify_student" %}', { method: 'POST', body: body, headers: { 'Accept': 'application/json' } })
-            .then(r => r.json().then(data => ({ ok: r.ok, data: data })))
+            .then(r => r.json().then(data => ({ ok: r.ok, status: r.status, data: data })))
             .then(res => {
-                if (!res.ok) throw new Error(res.data.error || 'Verification failed.');
-                setVerified(res.data);
+                if (res.ok) { setVerified(res.data); return; }
+                if (res.status === 404) {
+                    // No record: wipe the box so the next try starts clean
+                    matric.value = '';
+                    showVerifyError('No record found', res.data.error || 'Matric ID, IC number or card not found.');
+                } else if (res.status === 403) {
+                    showVerifyError('Home leave blocked', res.data.error);
+                } else {
+                    showVerifyError('Verification failed', res.data.error || 'Please try again.');
+                }
             })
-            .catch(err => {
-                verifyError.textContent = err.message || 'Could not reach the server. Try again.';
-                verifyError.classList.remove('d-none');
-            })
+            .catch(() => showVerifyError('Connection problem', 'Could not reach the server. Try again.'))
             .finally(() => { verifyBtn.disabled = false; });
     }
 

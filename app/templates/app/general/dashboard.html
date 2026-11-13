@@ -89,8 +89,8 @@
           </div>
           <div class="legend">
             <div class="legend-title">Status guide</div>
-            <div><span class="status-pill success">In (On time)</span><small>Back before curfew</small></div>
-            <div><span class="status-pill danger">In (Late)</span><small>Back after curfew</small></div>
+            <div><span class="status-pill success">In (On time)</span><small>Back before the return time</small></div>
+            <div><span class="status-pill danger">In (Late)</span><small>Back after the return time</small></div>
             <div><span class="status-pill neutral">Out</span><small>Still outside</small></div>
             <div><span class="status-pill info">Home Leave</span><small>Approved permit</small></div>
           </div>
@@ -367,7 +367,7 @@
     const now = new Date();
     const h = now.getHours();
     document.getElementById("liveClock").textContent = (h % 12 || 12) + ":" + String(now.getMinutes()).padStart(2, "0") + (h < 12 ? " AM" : " PM");
-    document.getElementById("liveDate").textContent = now.toLocaleDateString("en-MY", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    document.getElementById("liveDate").textContent = now.toLocaleDateString(document.documentElement.lang === "ms" ? "ms-MY" : "en-MY", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   }
   tickClock();
   setInterval(tickClock, 1000);

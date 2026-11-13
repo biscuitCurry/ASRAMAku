@@ -32,7 +32,7 @@
                             <span class="status-pill warning">Out</span>
                         {% endif %}
                         {% if student.active_ban %}
-                            <span class="status-pill dark">Banned</span>
+                            <span class="status-pill dark">Suspended</span>
                         {% elif student.status == "Approved" %}
                             <span class="status-pill success">Approved</span>
                         {% elif student.status == "Rejected" %}
@@ -43,18 +43,18 @@
                 </div>
             </div>
 
-            <!-- Ban -->
+            <!-- Suspension -->
             <div class="card mt-4" id="ban">
                 <div class="card-header">
-                    <h5><span class="header-ico red"><i class="fas fa-ban"></i></span> Ban</h5>
+                    <h5><span class="header-ico red"><i class="fas fa-ban"></i></span> Suspension</h5>
                 </div>
                 <div class="card-body">
                     {% if student.active_ban %}
-                        <p class="mb-1"><strong>Banned until {% if student.active_ban.ends_at %}{{ student.active_ban.ends_at|date:"d M Y, h:i A" }}{% else %}lifted{% endif %}</strong></p>
+                        <p class="mb-1"><strong>Suspended until {% if student.active_ban.ends_at %}{{ student.active_ban.ends_at|date:"d M Y, h:i A" }}{% else %}lifted{% endif %}</strong></p>
                         <p class="text-muted small mb-3">Reason: {{ student.active_ban.reason }}</p>
                         <form method="POST" action="{% url 'lift_ban' student.pk %}">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-outline-secondary w-100"><i class="fas fa-unlock"></i> Lift ban now</button>
+                            <button type="submit" class="btn btn-outline-secondary w-100"><i class="fas fa-unlock"></i> Lift suspension now</button>
                         </form>
                     {% else %}
                         <form method="POST" action="{% url 'ban_student' student.pk %}">
@@ -75,16 +75,16 @@
                                 </select>
                             </div>
                             <div class="mb-3 d-none" id="banUntilWrap">
-                                <label for="banUntil" class="form-label">Banned up to and including</label>
+                                <label for="banUntil" class="form-label">Suspended up to and including</label>
                                 <input type="date" id="banUntil" name="until_date" class="form-control">
                             </div>
-                            <button type="submit" class="btn btn-danger w-100"><i class="fas fa-ban"></i> Ban student</button>
-                            <div class="form-text">The student can't check out or apply for home leave while banned, and gets a ban letter by email.</div>
+                            <button type="submit" class="btn btn-danger w-100"><i class="fas fa-ban"></i> Suspend student</button>
+                            <div class="form-text">The student can't check out or apply for home leave while suspended, and gets a suspension letter by email.</div>
                         </form>
                     {% endif %}
 
                     {% if bans %}
-                        <div class="form-section mt-4">Ban history</div>
+                        <div class="form-section mt-4">Suspension history</div>
                         <ul class="list-unstyled small mb-0">
                             {% for ban in bans %}
                                 <li class="mb-2">
